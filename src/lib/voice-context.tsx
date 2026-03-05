@@ -49,8 +49,8 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
         .select("elevenlabs_api_key, voice_profiles, active_voice_id")
         .eq("id", user.id)
         .single()
-        .then(({ data }) => {
-          if (data) {
+        .then(({ data, error }) => {
+          if (!error && data) {
             if (data.elevenlabs_api_key) setApiKey(data.elevenlabs_api_key);
             if (Array.isArray(data.voice_profiles) && data.voice_profiles.length > 0) {
               setProfiles(data.voice_profiles as VoiceProfile[]);
@@ -58,8 +58,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
             if (data.active_voice_id) setSelectedVoiceIdState(data.active_voice_id);
           }
           setReady(true);
-        })
-        .catch(() => setReady(true));
+        });
     });
   }, []);
 

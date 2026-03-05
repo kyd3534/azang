@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { Eye, EyeOff, Plus, Trash2, Volume2, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Plus, Trash2, Volume2, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VoiceProfile {
