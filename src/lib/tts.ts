@@ -178,11 +178,75 @@ function stopKeepAlive() {
   }
 }
 
-function splitIntoSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?。])\s+|(?<=다\.|요\.|죠\.|까\.|군요\.)\s*/g)
-    .map((s) => s.trim())
-    .filter(Boolean);
+// ── 자연스러운 발화 전처리 ────────────────────────────────────────────────────
+
+/**
+ * 텍스트에 자연스러운 쉼표/pause 힌트를 삽입해 억양을 개선합니다.
+ * Web Speech API는 SSML 미지원 → 구두점으로 prosody 유도
+ */
+function preprocessText(text: string, lang: "ko" | "en"): string {
+  let t = text.trim();
+  if (lang === "ko") {
+    // 접속사 앞에 쉼표 → 자연스러운 호흡
+    t = t.replace(/\s+(그런데|그러나|하지만|그래서|왜냐하면|그리고|또한|게다가|따라서|결국|드디어|마침내)\s+/g, ", $1 ");
+    // 인용/강조 괄호 전처리
+    t = t.replace(/["'"']([^"'"']+)["'"']/g, ", $1,");
+    // 연속 마침표 공백 정규화
+    t = t.replace(/\.\s{2,}/g, ". ");
+  } else {
+    // 영어: 관계절·접속사 앞 쉼표
+    t = t.replace(/\s+(however|but|because|so|therefore|finally|suddenly|then)\s+/gi, ", $1 ");
+    t = t.replace(/[""]([^""]+)[""]/g, ", $1,");
+  }
+  return t;
+}
+
+/**
+ * 문장 특성을 분석해 rate/pitch를 동적으로 조정합니다.
+ * - 질문: pitch ↑ (올라가는 억양)
+ * - 감탄: pitch ↑ + rate ↑ (활기차게)
+ * - 짧은 단어: rate ↓ (또렷하게)
+ * - 긴 텍스트: rate 약간 ↓ (천천히 읽듯)
+ */
+function getAdaptiveParams(
+  text: string,
+  lang: "ko" | "en",
+  gender?: "female" | "male",
+  overrideRate?: number,
+  overridePitch?: number,
+): { rate: number; pitch: number } {
+  const isQuestion = /[?？]/.test(text);
+  const isExclaim = /[!！]/.test(text);
+  const wordCount = text.trim().split(/\s+/).length;
+  const isShortWord = wordCount <= 2;
+  const isLongText = text.length > 120;
+
+  if (lang === "ko") {
+    let rate = isLongText ? 0.82 : isShortWord ? 0.76 : 0.85;
+    let pitch = isQuestion ? 1.22 : isExclaim ? 1.18 : 1.12;
+    return {
+      rate: overrideRate ?? rate,
+      pitch: overridePitch ?? pitch,
+    };
+  }
+
+  // 영어
+  const base = gender === "female"
+    ? { rate: 0.90, pitch: 1.30 }
+    : gender === "male"
+    ? { rate: 0.88, pitch: 1.08 }
+    : { rate: 0.90, pitch: 1.12 };
+
+  let { rate, pitch } = base;
+  if (isQuestion)      { pitch += 0.14; rate -= 0.02; }
+  else if (isExclaim)  { pitch += 0.08; rate += 0.03; }
+  else if (isShortWord){ pitch += 0.06; rate -= 0.08; }
+  else if (isLongText) { rate  -= 0.04; }
+
+  return {
+    rate: overrideRate ?? rate,
+    pitch: overridePitch ?? pitch,
+  };
 }
 
 export interface SpeakOptions {
@@ -208,25 +272,15 @@ export function speak(text: string, options: SpeakOptions = {}) {
 
   const doSpeak = () => {
     const voice = getBestVoice(lang, gender);
+    const processed = preprocessText(text, lang);
+    const { rate, pitch } = getAdaptiveParams(text, lang, gender, options.rate, options.pitch);
 
-    const utter = new SpeechSynthesisUtterance(text);
+    const utter = new SpeechSynthesisUtterance(processed);
     if (voice) utter.voice = voice;
     utter.lang = lang === "ko" ? "ko-KR" : "en-US";
     utter.volume = 1;
-
-    if (lang === "ko") {
-      utter.rate = options.rate ?? 0.88;
-      utter.pitch = options.pitch ?? 1.05;
-    } else if (gender === "female") {
-      utter.rate = options.rate ?? 0.92;
-      utter.pitch = options.pitch ?? 1.28;
-    } else if (gender === "male") {
-      utter.rate = options.rate ?? 0.90;
-      utter.pitch = options.pitch ?? 1.10;
-    } else {
-      utter.rate = options.rate ?? 0.90;
-      utter.pitch = options.pitch ?? 1.10;
-    }
+    utter.rate = rate;
+    utter.pitch = pitch;
 
     utter.onend = () => { stopKeepAlive(); onEnd?.(); };
     utter.onerror = (e) => {
@@ -290,11 +344,13 @@ export function speakDialogue(lines: DialogueSpeakLine[], onDone?: () => void): 
       lineIdx++;
 
       const voice = getBestVoice("en", line.gender);
-      const utter = new SpeechSynthesisUtterance(line.text);
+      const processed = preprocessText(line.text, "en");
+      const { rate, pitch } = getAdaptiveParams(line.text, "en", line.gender);
+      const utter = new SpeechSynthesisUtterance(processed);
       utter.lang = "en-US";
       if (voice) utter.voice = voice;
-      utter.rate = line.gender === "female" ? 0.92 : 0.90;
-      utter.pitch = line.gender === "female" ? 1.28 : 1.10;
+      utter.rate = rate;
+      utter.pitch = pitch;
       utter.volume = 1;
 
       utter.onend = () => {
