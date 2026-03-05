@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const authPaths = ["/login", "/register"];
+  const authPaths = ["/login"];
   const isAuthPath = authPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
