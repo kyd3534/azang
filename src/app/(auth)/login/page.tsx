@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  async function handleSocialLogin(provider: "google" | "kakao") {
+  async function handleSocialLogin(provider: "google") {
     setError("");
     setLoading(provider);
     const supabase = createClient();
@@ -104,23 +104,6 @@ export default function LoginPage() {
               </svg>
             )}
             Google로 계속하기
-          </button>
-
-          {/* Kakao */}
-          <button
-            onClick={() => handleSocialLogin("kakao")}
-            disabled={!!loading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-60"
-            style={{ background: "#FEE500", border: "none", color: "#191919" }}
-          >
-            {loading === "kakao" ? (
-              <span className="animate-spin text-base">⏳</span>
-            ) : (
-              <svg width="20" height="19" viewBox="0 0 20 19" fill="#191919">
-                <path d="M10 0C4.477 0 0 3.582 0 8c0 2.983 1.878 5.603 4.705 7.074L3.75 19l5.11-3.388C9.286 15.87 9.64 15.9 10 15.9c5.523 0 10-3.582 10-8S15.523 0 10 0z"/>
-              </svg>
-            )}
-            카카오로 계속하기
           </button>
 
           {error && (
