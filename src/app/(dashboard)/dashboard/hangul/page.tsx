@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PracticeHub, { type PracticeWord } from "@/components/learning/PracticeHub";
+import GenerationUsage from "@/components/ui/GenerationUsage";
 import type { HangulOutput, HangulCombinedOutput } from "@/ai/flows/hangul";
 
 const AGE_GROUPS = [
@@ -135,6 +136,7 @@ export default function HangulPage() {
       {/* ── 만들기 ── */}
       {tab === "create" && (
         <div className="max-w-lg space-y-6">
+          <GenerationUsage />
           <div className="space-y-2">
             <Label className="font-bold text-emerald-700">아이 연령대</Label>
             <div className="grid grid-cols-5 gap-2">

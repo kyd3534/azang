@@ -10,6 +10,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import GenerationUsage from "@/components/ui/GenerationUsage";
 import { Trash2 } from "lucide-react";
 import { PRESET_CHARACTERS } from "@/components/coloring/presetCharacters";
 
@@ -140,6 +141,7 @@ export default function ColoringListPage() {
       {/* ── AI 만들기 탭 ── */}
       {tab === "create" && (
         <div className="max-w-lg space-y-6">
+          <GenerationUsage />
           <div className="rounded-xl px-4 py-3 text-sm font-medium"
             style={{ background: "#FFF8F5", border: "1px solid #FFE8D6", color: "#E65100" }}>
             🤖 AI가 주제에 맞는 색칠 도안을 직접 그려드려요!

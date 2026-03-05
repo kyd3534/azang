@@ -10,6 +10,7 @@ import ContentList from "@/components/layout/ContentList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import GenerationUsage from "@/components/ui/GenerationUsage";
 
 const AGE_GROUPS = [
   { value: "1-2", label: "1-2세", emoji: "🍼" },
@@ -80,6 +81,7 @@ export default function StoryPage() {
 
       {tab === "create" ? (
         <div className="max-w-lg space-y-6">
+          <GenerationUsage />
           {/* 연령 선택 */}
           <div className="space-y-2">
             <Label className="font-bold text-pink-600">아이 연령대</Label>
