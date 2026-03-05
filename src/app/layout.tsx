@@ -16,10 +16,15 @@ export const metadata: Metadata = {
   },
   description: "아이의 성장을 함께하는 AI 기반 유아 학습 플랫폼",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "아장아장",
+    startupImage: "/apple-touch-icon.png",
   },
 };
 
