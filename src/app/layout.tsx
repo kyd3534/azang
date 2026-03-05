@@ -15,11 +15,18 @@ export const metadata: Metadata = {
     template: "%s | 아장아장",
   },
   description: "아이의 성장을 함께하는 AI 기반 유아 학습 플랫폼",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "아장아장",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#EC4899",
 };
 
 export default function RootLayout({

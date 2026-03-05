@@ -53,17 +53,14 @@ export default function RegisterPage() {
     }
 
     if (data.user) {
-      supabase.from("profiles").update({ nickname }).eq("id", data.user.id);
+      await supabase
+        .from("profiles")
+        .update({ nickname, email, status: "pending" })
+        .eq("id", data.user.id);
     }
 
-    if (!data.session) {
-      setNeedsConfirm(true);
-      setLoading(false);
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
+    setNeedsConfirm(true);
+    setLoading(false);
   }
 
   if (needsConfirm) {
@@ -73,12 +70,12 @@ export default function RegisterPage() {
         style={{ background: "linear-gradient(135deg, #FFD6EC 0%, #EDD6FF 50%, #D6EEFF 100%)" }}
       >
         <div className="w-full max-w-sm text-center bg-white/90 rounded-3xl p-8" style={{ boxShadow: "0 8px 40px rgba(255,105,180,0.25)" }}>
-          <div className="text-6xl mb-4 animate-bounce">📧</div>
-          <h2 className="text-xl font-black mb-2" style={{ color: "#FF4FAD" }}>이메일을 확인해주세요!</h2>
+          <div className="text-6xl mb-4 animate-bounce">⏳</div>
+          <h2 className="text-xl font-black mb-2" style={{ color: "#FF4FAD" }}>가입 신청 완료!</h2>
           <p className="text-sm font-semibold text-pink-400 mb-1">
-            <b>{email}</b> 으로 인증 링크를 보냈어요.
+            <b>{email}</b> 계정이 신청됐어요.
           </p>
-          <p className="text-sm text-pink-300 mb-6">이메일 인증 후 로그인해주세요.</p>
+          <p className="text-sm text-pink-300 mb-6">관리자 승인 후 이용하실 수 있어요 🌸</p>
           <Link href="/login">
             <Button className="rounded-xl font-black" style={{ background: "linear-gradient(90deg, #FF6BB5, #C778E8)", border: "none" }}>
               로그인하러 가기 🌟

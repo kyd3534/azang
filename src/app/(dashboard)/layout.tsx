@@ -15,9 +15,13 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nickname")
+    .select("nickname, status")
     .eq("id", user.id)
     .single();
+
+  // 승인 대기/거절 시 접근 차단
+  if (profile?.status === "pending") redirect("/pending");
+  if (profile?.status === "rejected") redirect("/pending");
 
   return (
     <div className="min-h-screen bg-white">
