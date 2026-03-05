@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from "./supabase-server";
 
 // 캐시 키 생성 (정규화: 소문자, 공백제거)
-export function buildCacheKey(type: string, ageGroup: string | null, topic: string): string {
+export async function buildCacheKey(type: string, ageGroup: string | null, topic: string): Promise<string> {
   const normalized = topic.trim().toLowerCase().replace(/\s+/g, "");
   return ageGroup ? `${type}:${ageGroup}:${normalized}` : `${type}:${normalized}`;
 }

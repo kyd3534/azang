@@ -13,7 +13,7 @@ export async function generateStory(input: StoryInput) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요해요.");
 
-  const cacheKey = buildCacheKey("story", input.ageGroup, input.theme);
+  const cacheKey = await buildCacheKey("story", input.ageGroup, input.theme);
   const cached = await checkCache(cacheKey);
 
   let result: Awaited<ReturnType<typeof storyFlow>>;
@@ -40,7 +40,7 @@ export async function generateEnglishLesson(input: EnglishInput) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요해요.");
 
-  const cacheKey = buildCacheKey("english", input.ageGroup, input.topic ?? "일상생활");
+  const cacheKey = await buildCacheKey("english", input.ageGroup, input.topic ?? "일상생활");
   const cached = await checkCache(cacheKey);
 
   let result: CombinedOutput;
@@ -67,7 +67,7 @@ export async function generateHangulLesson(input: HangulInput) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요해요.");
 
-  const cacheKey = buildCacheKey("hangul", input.ageGroup, input.topic ?? "일상생활");
+  const cacheKey = await buildCacheKey("hangul", input.ageGroup, input.topic ?? "일상생활");
   const cached = await checkCache(cacheKey);
 
   let result: HangulCombinedOutput;
@@ -94,7 +94,7 @@ export async function generateNumberLesson(input: NumberInput) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요해요.");
 
-  const cacheKey = buildCacheKey("numbers", input.ageGroup, input.theme ?? "일상생활");
+  const cacheKey = await buildCacheKey("numbers", input.ageGroup, input.theme ?? "일상생활");
   const cached = await checkCache(cacheKey);
 
   let result: NumbersCombinedOutput;
@@ -121,7 +121,7 @@ export async function generateColoringPage(input: ColoringInput) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("로그인이 필요해요.");
 
-  const cacheKey = buildCacheKey("coloring", null, input.subject);
+  const cacheKey = await buildCacheKey("coloring", null, input.subject);
   const cached = await checkCache(cacheKey);
 
   let result: Awaited<ReturnType<typeof coloringFlow>>;
