@@ -26,7 +26,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-white">
       <VoiceProvider>
-        <DashboardNav nickname={profile?.nickname ?? "친구"} />
+        <DashboardNav nickname={profile?.nickname ?? "친구"} isAdmin={user.email === "kyd3534@gmail.com"} />
         <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
           {children}
         </main>

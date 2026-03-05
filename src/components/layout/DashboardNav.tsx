@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useVoice } from "@/lib/voice-context";
-import { LogOut, User, Mic } from "lucide-react";
+import { LogOut, User, Mic, ShieldCheck } from "lucide-react";
 
-export default function DashboardNav({ nickname }: { nickname: string }) {
+export default function DashboardNav({ nickname, isAdmin = false }: { nickname: string; isAdmin?: boolean }) {
   const router = useRouter();
   const { profiles, selectedVoiceId, setSelectedVoiceId, ready } = useVoice();
   const validProfiles = profiles.filter((p) => p.voice_id);
@@ -91,6 +91,17 @@ export default function DashboardNav({ nickname }: { nickname: string }) {
           {/* 우측 버튼 — 데스크탑만 */}
           {!isMobile && (
             <div className="flex items-center gap-0.5 shrink-0">
+              {isAdmin && (
+                <Link href="/dashboard/admin">
+                  <button
+                    className="flex items-center gap-1 rounded-full transition-all duration-200 hover:bg-purple-50"
+                    style={{ color: "#7C3AED", padding: "6px 10px" }}
+                  >
+                    <ShieldCheck size={15} />
+                    <span className="text-sm font-semibold">관리자</span>
+                  </button>
+                </Link>
+              )}
               <Link href="/voice-profile">
                 <button
                   className="flex items-center gap-1 rounded-full transition-all duration-200 hover:bg-pink-50"
@@ -127,6 +138,20 @@ export default function DashboardNav({ nickname }: { nickname: string }) {
             className="flex items-center justify-around py-1.5"
             style={{ borderTop: "1px solid #EFF6FF" }}
           >
+            {isAdmin && (
+              <>
+                <Link href="/dashboard/admin" className="flex-1">
+                  <button
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all hover:bg-purple-50"
+                    style={{ color: "#7C3AED" }}
+                  >
+                    <ShieldCheck size={14} />
+                    <span className="text-xs font-semibold">관리자</span>
+                  </button>
+                </Link>
+                <div className="w-px h-5 bg-gray-200" />
+              </>
+            )}
             <Link href="/voice-profile" className="flex-1">
               <button
                 className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all hover:bg-pink-50"
