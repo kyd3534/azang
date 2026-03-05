@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  async function handleSocialLogin(provider: "google" | "apple" | "kakao") {
+  async function handleSocialLogin(provider: "google" | "kakao") {
     setError("");
     setLoading(provider);
     const supabase = createClient();
@@ -121,23 +121,6 @@ export default function LoginPage() {
               </svg>
             )}
             카카오로 계속하기
-          </button>
-
-          {/* Apple */}
-          <button
-            onClick={() => handleSocialLogin("apple")}
-            disabled={!!loading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-60"
-            style={{ background: "#000", border: "none", color: "white" }}
-          >
-            {loading === "apple" ? (
-              <span className="animate-spin text-base">⏳</span>
-            ) : (
-              <svg width="17" height="20" viewBox="0 0 814 1000" fill="white">
-                <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.8 0 663.3 0 541.9 0 332.9 129.3 216.1 256.9 216.1c63.5 0 116.6 42.8 156 42.8 37.5 0 102.9-45.5 170.8-45.5 27.1 0 108.2 2.6 168.1 80.1zm-130.5-108.5c-15.7 46.4-44.7 91.1-96.8 113.1-5.2 2-10.5 3.3-15.9 3.3-1.8 0-3.6-.1-5.5-.4 2.3-43.2 18.4-84.8 47.1-115.6 26.4-28.5 70.7-52.3 111.1-55.9 1.3 18.5-4 37-40 55.5z"/>
-              </svg>
-            )}
-            Apple로 계속하기
           </button>
 
           {error && (
