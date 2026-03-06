@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
+
+function isWebView() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /KAKAOTALK|Line|Instagram|FBAN|FBAV|Twitter|NaverApp|DaumApp/.test(ua) ||
+    (/Android/.test(ua) && /wv/.test(ua)) ||
+    (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
+}
 
 const FLOATS: { emoji: string; top?: string; left?: string; right?: string; bottom?: string; delay: string; size: string }[] = [
   { emoji: "🌸", top: "8%", left: "6%", delay: "0s", size: "2.5rem" },
@@ -17,6 +25,11 @@ const FLOATS: { emoji: string; top?: string; left?: string; right?: string; bott
 export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [webView, setWebView] = useState(false);
+
+  useEffect(() => {
+    setWebView(isWebView());
+  }, []);
 
   async function handleSocialLogin(provider: "google") {
     setError("");
@@ -85,6 +98,22 @@ export default function LoginPage() {
           <h2 className="text-lg font-black mb-2 text-center" style={{ color: "#FF4FAD" }}>
             소셜 계정으로 시작하기 ✨
           </h2>
+
+          {webView && (
+            <div className="rounded-2xl p-3 mb-2 text-center" style={{ background: "#FFF3CD", border: "1.5px solid #FFD700" }}>
+              <p className="text-xs font-bold mb-2" style={{ color: "#8B6914" }}>
+                앱 내 브라우저에서는 Google 로그인이 차단돼요.<br />
+                아래 버튼을 눌러 기본 브라우저에서 열어주세요.
+              </p>
+              <button
+                onClick={() => window.open(window.location.href, "_blank")}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white"
+                style={{ background: "linear-gradient(90deg, #FF85C1, #C778E8)" }}
+              >
+                기본 브라우저로 열기
+              </button>
+            </div>
+          )}
 
           {/* Google */}
           <button
