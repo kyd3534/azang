@@ -154,53 +154,52 @@ export default function MemoryGame() {
   }
 
   return (
-    <div>
-      <PageHeader title="기억력 게임" emoji="🃏" backHref="/dashboard/games" />
+    <div className="w-full">
+        <PageHeader title="기억력 게임" emoji="🃏" backHref="/dashboard/games" />
 
-      <div className="flex items-center justify-between mb-5 max-w-sm">
-        <span className="text-sm text-gray-500">짝 맞춘 카드: <b>{matched}/{theme.pairs.length}</b></span>
-        <span className="text-sm text-gray-500">시도: <b>{moves}</b></span>
-        <Button variant="outline" size="sm" onClick={reset}>다시 시작</Button>
-      </div>
+        <div className="flex items-center justify-between mb-5">
+          <span className="text-sm text-gray-500">짝 맞춘 카드: <b>{matched}/{theme.pairs.length}</b></span>
+          <span className="text-sm text-gray-500">시도: <b>{moves}</b></span>
+          <Button variant="outline" size="sm" onClick={reset}>다시 시작</Button>
+        </div>
 
-      {/* 현재 테마 표시 */}
-      <div className="mb-4 max-w-sm">
-        <span
-          className="text-xs font-bold px-3 py-1.5 rounded-full"
-          style={{ background: "#FFF0F8", color: "#EC4899", border: "1.5px solid #FBCFE8" }}
-        >
-          {theme.name} 테마
-        </span>
-      </div>
-
-      {isWon && (
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-          className="mb-5 rounded-xl bg-yellow-50 border border-yellow-200 p-4 text-center">
-          <p className="text-xl font-bold text-yellow-700">🎉 완성! {moves}번 만에 성공했어요!</p>
-          <Button className="mt-3" onClick={reset}>다시 하기</Button>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-4 gap-3 max-w-sm">
-        {cards.map((card) => (
-          <motion.button
-            key={card.id}
-            onClick={() => handleFlip(card.id)}
-            whileTap={{ scale: 0.92 }}
-            className={`aspect-square rounded-2xl flex items-center justify-center transition-all duration-200 border-2 ${
-              card.isMatched
-                ? "bg-green-50 border-green-200"
-                : card.isFlipped
-                ? "bg-white border-pink-200 shadow-notion"
-                : "bg-pink-50 border-pink-200 hover:bg-pink-100 cursor-pointer"
-            }`}
+        <div className="mb-4">
+          <span
+            className="text-xs font-bold px-3 py-1.5 rounded-full"
+            style={{ background: "#FFF0F8", color: "#EC4899", border: "1.5px solid #FBCFE8" }}
           >
-            <span style={{ fontSize: card.isFlipped || card.isMatched ? "3.4rem" : "2rem", lineHeight: 1 }}>
-              {card.isFlipped || card.isMatched ? card.emoji : "?"}
-            </span>
-          </motion.button>
-        ))}
-      </div>
+            {theme.name} 테마
+          </span>
+        </div>
+
+        {isWon && (
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+            className="mb-5 rounded-xl bg-yellow-50 border border-yellow-200 p-4 text-center">
+            <p className="text-xl font-bold text-yellow-700">🎉 완성! {moves}번 만에 성공했어요!</p>
+            <Button className="mt-3" onClick={reset}>다시 하기</Button>
+          </motion.div>
+        )}
+
+        <div className="grid grid-cols-4 gap-3 sm:gap-4">
+          {cards.map((card) => (
+            <motion.button
+              key={card.id}
+              onClick={() => handleFlip(card.id)}
+              whileTap={{ scale: 0.92 }}
+              className={`aspect-square rounded-2xl flex items-center justify-center transition-all duration-200 border-2 ${
+                card.isMatched
+                  ? "bg-green-50 border-green-200"
+                  : card.isFlipped
+                  ? "bg-white border-pink-200 shadow-notion"
+                  : "bg-pink-50 border-pink-200 hover:bg-pink-100 cursor-pointer"
+              }`}
+            >
+              <span style={{ fontSize: card.isFlipped || card.isMatched ? "clamp(2.4rem,12vw,5.5rem)" : "clamp(1.2rem,5vw,2.2rem)", lineHeight: 1 }}>
+                {card.isFlipped || card.isMatched ? card.emoji : "?"}
+              </span>
+            </motion.button>
+          ))}
+        </div>
     </div>
   );
 }

@@ -36,41 +36,48 @@ export default function QuizGame() {
     setAnswered(choice);
     setTotal((t) => t + 1);
 
-    // 선택한 단어 먼저 읽고, 이후 피드백 음성
-    speak(choice, { lang: "ko" });
-
     const isCorrect = choice === question.answer;
-    if (isCorrect) {
-      setScore((s) => s + 1);
-      const msg = CORRECT_COMMENTS[Math.floor(Math.random() * CORRECT_COMMENTS.length)];
-      setComment({ text: msg, correct: true });
-      setTimeout(() => speak(msg, { lang: "ko" }), 500);
-    } else {
-      const prefix = WRONG_COMMENTS_PREFIX[Math.floor(Math.random() * WRONG_COMMENTS_PREFIX.length)];
-      const msg = `${prefix} "${question.answer}"이에요`;
-      setComment({ text: `${prefix} "${question.answer}"이에요`, correct: false });
-      setTimeout(() => speak(`${prefix} ${question.answer}이에요`, { lang: "ko" }), 500);
-    }
 
-    setTimeout(() => {
-      setAnswered(null);
-      setComment(null);
-      setQuestion(getRandomQuestion());
-    }, 1800);
+    // 피드백 메시지 미리 결정
+    const feedbackMsg = isCorrect
+      ? CORRECT_COMMENTS[Math.floor(Math.random() * CORRECT_COMMENTS.length)]
+      : `${WRONG_COMMENTS_PREFIX[Math.floor(Math.random() * WRONG_COMMENTS_PREFIX.length)]} ${question.answer}이에요`;
+
+    if (isCorrect) setScore((s) => s + 1);
+    setComment({ text: isCorrect ? feedbackMsg : `${WRONG_COMMENTS_PREFIX[0]} "${question.answer}"이에요`, correct: isCorrect });
+
+    // 1단계: 선택한 단어 읽기 → 끝나면 피드백 읽기 → 끝나면 다음 문제
+    speak(choice, {
+      lang: "ko",
+      onEnd: () => {
+        setTimeout(() => {
+          speak(feedbackMsg, {
+            lang: "ko",
+            onEnd: () => {
+              setTimeout(() => {
+                setAnswered(null);
+                setComment(null);
+                setQuestion(getRandomQuestion());
+              }, 400);
+            },
+          });
+        }, 150);
+      },
+    });
   }, [answered, question.answer]);
 
   return (
-    <div>
+    <div className="w-full">
       <PageHeader title="퀴즈 놀이" emoji="❓" backHref="/dashboard/games" />
 
-      <div className="flex items-center justify-between mb-5 max-w-sm">
+      <div className="flex items-center justify-between mb-5">
         <span className="text-sm text-gray-500">점수: <b>{score}/{total}</b></span>
         <Button variant="outline" size="sm" onClick={() => { setScore(0); setTotal(0); setComment(null); setQuestion(getRandomQuestion()); }}>
           초기화
         </Button>
       </div>
 
-      <div className="max-w-sm space-y-5">
+      <div className="space-y-5">
         {/* 이모지 문제 — 클릭하면 문제 읽기 */}
         <AnimatePresence mode="wait">
           <motion.div key={question.emoji}

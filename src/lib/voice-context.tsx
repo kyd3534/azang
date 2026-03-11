@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { speak as webSpeak, stopSpeaking as webStop, type SpeakOptions } from "@/lib/tts";
+import { speak as webSpeak, stopSpeaking as webStop, onSpeakingChange, type SpeakOptions } from "@/lib/tts";
 
 export interface VoiceProfile {
   id: string;
@@ -12,22 +12,28 @@ export interface VoiceProfile {
 
 interface VoiceContextValue {
   profiles: VoiceProfile[];
+  apiKey: string;
   selectedVoiceId: string;
   setSelectedVoiceId: (id: string) => void;
   tts: (text: string, opts?: SpeakOptions) => void;
   playWith: (text: string, voiceId: string, opts?: SpeakOptions) => void;
   stop: () => void;
   ready: boolean;
+  speaking: boolean; // Web Speech 재생 중 여부
+  refresh: () => Promise<void>; // Supabase에서 최신 설정 재로드
 }
 
 const VoiceContext = createContext<VoiceContextValue>({
   profiles: [],
+  apiKey: "",
   selectedVoiceId: "",
   setSelectedVoiceId: () => {},
   tts: (text, opts) => webSpeak(text, opts),
   playWith: (text, _voiceId, opts) => webSpeak(text, opts),
   stop: () => {},
   ready: false,
+  speaking: false,
+  refresh: async () => {},
 });
 
 export function VoiceProvider({ children }: { children: React.ReactNode }) {
@@ -35,31 +41,43 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
   const [apiKey, setApiKey] = useState("");
   const [selectedVoiceId, setSelectedVoiceIdState] = useState("");
   const [ready, setReady] = useState(false);
+  const [speaking, setSpeakingState] = useState(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const userIdRef = useRef<string>("");
 
+  // Web Speech 재생 상태 구독
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setReady(true); return; }
-      userIdRef.current = user.id;
+    const unsub = onSpeakingChange((v) => setSpeakingState(v));
+    return () => { unsub(); };
+  }, []);
 
-      supabase
-        .from("profiles")
-        .select("elevenlabs_api_key, voice_profiles, active_voice_id")
-        .eq("id", user.id)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data) {
-            if (data.elevenlabs_api_key) setApiKey(data.elevenlabs_api_key);
-            if (Array.isArray(data.voice_profiles) && data.voice_profiles.length > 0) {
-              setProfiles(data.voice_profiles as VoiceProfile[]);
-            }
-            if (data.active_voice_id) setSelectedVoiceIdState(data.active_voice_id);
-          }
-          setReady(true);
-        });
-    });
+  async function loadFromDb() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setReady(true); return; }
+    userIdRef.current = user.id;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("elevenlabs_api_key, voice_profiles, active_voice_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!error && data) {
+      setApiKey(data.elevenlabs_api_key ?? "");
+      if (Array.isArray(data.voice_profiles) && data.voice_profiles.length > 0) {
+        setProfiles(data.voice_profiles as VoiceProfile[]);
+      } else {
+        setProfiles([]);
+      }
+      // active_voice_id 없으면 기본값 "__female__"
+      setSelectedVoiceIdState(data.active_voice_id ?? "__female__");
+    }
+    setReady(true);
+  }
+
+  useEffect(() => {
+    loadFromDb();
   }, []);
 
   function setSelectedVoiceId(id: string) {
@@ -112,11 +130,20 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
   }
 
   function tts(text: string, opts?: SpeakOptions) {
-    if (!selectedVoiceId || !apiKey) {
-      webSpeak(text, opts);
+    if (selectedVoiceId === "" || selectedVoiceId === "__female__") {
+      webSpeak(text, { ...opts, gender: "female" });
       return;
     }
-    _playElevenLabs(text, selectedVoiceId, opts);
+    if (selectedVoiceId === "__male__") {
+      webSpeak(text, { ...opts, gender: "male" });
+      return;
+    }
+    // ElevenLabs ID
+    if (apiKey) {
+      _playElevenLabs(text, selectedVoiceId, opts);
+    } else {
+      webSpeak(text, { ...opts, gender: "female" });
+    }
   }
 
   function playWith(text: string, voiceId: string, opts?: SpeakOptions) {
@@ -129,7 +156,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <VoiceContext.Provider value={{ profiles, selectedVoiceId, setSelectedVoiceId, tts, playWith, stop, ready }}>
+    <VoiceContext.Provider value={{ profiles, apiKey, selectedVoiceId, setSelectedVoiceId, tts, playWith, stop, ready, speaking, refresh: loadFromDb }}>
       {children}
     </VoiceContext.Provider>
   );

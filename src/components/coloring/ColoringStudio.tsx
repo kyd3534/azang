@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
+import { playFillSound, playBrushSound, playEraserSound } from "@/lib/coloring-sound";
 
 // ── 24 색상 팔레트 ─────────────────────────────────────────────────────────
 const PALETTE: readonly string[] = [
@@ -225,20 +226,6 @@ export default function ColoringStudio({
     }
   }
 
-  // ── 소리 ─────────────────────────────────────────────────────────────────
-  function playPop() {
-    try {
-      const ac = new AudioContext();
-      const o = ac.createOscillator();
-      const g = ac.createGain();
-      o.connect(g); g.connect(ac.destination);
-      o.type = "sine"; o.frequency.value = 660;
-      g.gain.setValueAtTime(0.1, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
-      o.start(ac.currentTime); o.stop(ac.currentTime + 0.14);
-    } catch { /* ignore */ }
-  }
-
   // ── DB 저장 ───────────────────────────────────────────────────────────────
   function scheduleSave() {
     if (!persistToDb) return;
@@ -288,7 +275,7 @@ export default function ColoringStudio({
 
     undoStack.current = [...undoStack.current.slice(-19), { canvas: "fill", snapshot }];
     setUndoCount(undoStack.current.length);
-    playPop();
+    playFillSound();
     scheduleSave();
   }
 
@@ -344,6 +331,9 @@ export default function ColoringStudio({
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastPos.current = pos;
+
+    if (tool === "brush") playBrushSound();
+    else if (tool === "eraser") playEraserSound();
   }
 
   function handlePointerUp() {

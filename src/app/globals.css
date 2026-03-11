@@ -170,8 +170,18 @@
   50% { opacity: 0.5; transform: scale(0.75); }
 }
 
+@keyframes tts-wave {
+  0%   { transform: scaleY(0.4); }
+  100% { transform: scaleY(1.6); }
+}
+
+@keyframes fairy-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
 @utility animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: fairy-float 3s ease-in-out infinite;
 }
 
 @utility animate-twinkle {

@@ -204,7 +204,7 @@ export default function MazeGame() {
   const stars = moves <= size * 3 ? 3 : moves <= size * 5 ? 2 : 1;
 
   return (
-    <div>
+    <div className="w-full">
       <PageHeader title="미로 찾기" emoji="🌀" backHref="/dashboard/games" />
 
       {/* Difficulty */}

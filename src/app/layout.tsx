@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
-import { DevicePreview } from "@/components/dev/DevicePreview";
+import { DeviceModeProvider, DevicePreview, DeviceToolbar } from "@/components/dev/DevicePreview";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-sans",
@@ -17,14 +17,14 @@ export const metadata: Metadata = {
   description: "아이의 성장을 함께하는 AI 기반 유아 학습 플랫폼",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/favicon.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "아장아장",
-    startupImage: "/apple-touch-icon.png",
+    startupImage: "/logo.png",
   },
 };
 
@@ -42,11 +42,10 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={`${notoSansKR.variable} antialiased`}>
-        {process.env.NODE_ENV === 'development' ? (
+        <DeviceModeProvider>
+          <DeviceToolbar />
           <DevicePreview>{children}</DevicePreview>
-        ) : (
-          children
-        )}
+        </DeviceModeProvider>
       </body>
     </html>
   );

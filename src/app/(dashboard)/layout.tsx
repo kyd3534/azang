@@ -15,19 +15,15 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nickname, status")
+    .select("nickname")
     .eq("id", user.id)
     .single();
-
-  // 승인 대기/거절 시 접근 차단
-  if (profile?.status === "pending") redirect("/pending");
-  if (profile?.status === "rejected") redirect("/pending");
 
   return (
     <div className="min-h-screen bg-white">
       <VoiceProvider>
         <DashboardNav nickname={profile?.nickname ?? "친구"} isAdmin={user.email === "kyd3534@gmail.com"} />
-        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <main className="w-full px-3 sm:px-6 py-4 sm:py-8">
           {children}
         </main>
       </VoiceProvider>

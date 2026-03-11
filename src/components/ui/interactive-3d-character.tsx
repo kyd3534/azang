@@ -124,16 +124,7 @@ export default function InteractiveCharacter() {
 
       const { Zdog, TweenMax, TweenLite, Sine } = window;
 
-      /* Zdog는 매 프레임 clearRect로 캔버스를 투명하게 지운다.
-         투명 픽셀 사이로 aurora 배경이 비쳐 "눈물"처럼 보이므로
-         clearRect 뒤에 항상 흰색을 채워 투명 영역을 막는다. */
-      const ctx2d = canvas.getContext("2d")!;
-      const _origClear = ctx2d.clearRect.bind(ctx2d);
-      ctx2d.clearRect = function (x: number, y: number, w: number, h: number) {
-        _origClear(x, y, w, h);
-        ctx2d.fillStyle = "white";
-        ctx2d.fillRect(x, y, w, h);
-      };
+      const ctx2d = canvas.getContext("2d")!
 
       const illo = new Zdog.Illustration({
         element: canvas,
@@ -241,7 +232,7 @@ export default function InteractiveCharacter() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ display: "block", width: "100%", height: "100%", background: "white" }}
+      style={{ display: "block", width: "100%", height: "100%", background: "transparent" }}
     />
   );
 }

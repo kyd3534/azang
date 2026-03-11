@@ -9,8 +9,7 @@ import { LogOut, User, Mic, ShieldCheck } from "lucide-react";
 
 export default function DashboardNav({ nickname, isAdmin = false }: { nickname: string; isAdmin?: boolean }) {
   const router = useRouter();
-  const { profiles, selectedVoiceId, setSelectedVoiceId, ready } = useVoice();
-  const validProfiles = profiles.filter((p) => p.voice_id);
+  useVoice(); // keep context alive
 
   const headerRef = useRef<HTMLElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -38,7 +37,7 @@ export default function DashboardNav({ nickname, isAdmin = false }: { nickname: 
       className="sticky top-0 z-40 bg-white"
       style={{ borderBottom: "2px solid #DBEAFE", boxShadow: "0 2px 12px rgba(59,130,246,0.08)" }}
     >
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="px-4 sm:px-6">
         {/* 1행: 로고 + 음성 선택 + 데스크탑 우측 버튼 */}
         <div className="h-14 flex items-center justify-between gap-3">
           {/* 로고 */}
@@ -54,39 +53,6 @@ export default function DashboardNav({ nickname, isAdmin = false }: { nickname: 
               <span className="text-base animate-twinkle" style={{ color: "#60A5FA" }}>✨</span>
             </div>
           </Link>
-
-          {/* 가운데 — 목소리 아이콘 선택 */}
-          {ready && validProfiles.length > 0 && (
-            <div className="flex items-center gap-1 flex-1 justify-center">
-              <button
-                title="기본 목소리"
-                onClick={() => setSelectedVoiceId("")}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all shrink-0"
-                style={{
-                  background: !selectedVoiceId ? "#6B7280" : "#F3F4F6",
-                  color: !selectedVoiceId ? "white" : "#9CA3AF",
-                  boxShadow: !selectedVoiceId ? "0 0 0 2px #6B7280" : "none",
-                }}
-              >
-                🔊
-              </button>
-              {validProfiles.map((p) => (
-                <button
-                  key={p.id}
-                  title={p.name}
-                  onClick={() => setSelectedVoiceId(p.voice_id)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all shrink-0"
-                  style={{
-                    background: selectedVoiceId === p.voice_id ? "#EC4899" : "#FDF2F8",
-                    color: selectedVoiceId === p.voice_id ? "white" : "#EC4899",
-                    boxShadow: selectedVoiceId === p.voice_id ? "0 0 0 2px #EC4899" : "none",
-                  }}
-                >
-                  {p.name.charAt(0)}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* 우측 버튼 — 데스크탑만 */}
           {!isMobile && (

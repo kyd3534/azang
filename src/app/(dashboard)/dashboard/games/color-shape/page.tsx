@@ -220,7 +220,7 @@ export default function ColorShapeGame() {
       stars === 2 ? "잘 했어요! 조금만 더 연습해요!" :
       stars === 1 ? "조금 더 연습해봐요!" : "다시 도전해봐요!";
     return (
-      <div>
+      <div className="w-full">
         <PageHeader title="색깔/모양 맞추기" emoji="🎨" backHref="/dashboard/games" />
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -228,7 +228,7 @@ export default function ColorShapeGame() {
           onAnimationComplete={() => {
             speak(`${score}개 맞혔어요! ${resultMsg}`, { lang: "ko" });
           }}
-          className="text-center py-8 px-4 rounded-3xl max-w-sm"
+          className="text-center py-8 px-4 rounded-3xl"
           style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #93C5FD" }}
         >
           <div className="text-5xl mb-3">{"⭐".repeat(stars)}{"☆".repeat(3 - stars)}</div>
@@ -244,7 +244,7 @@ export default function ColorShapeGame() {
   }
 
   return (
-    <div className="max-w-sm">
+    <div className="w-full">
       <PageHeader title="색깔/모양 맞추기" emoji="🎨" backHref="/dashboard/games" />
 
       <div className="flex items-center justify-between mb-3 text-sm text-gray-500">

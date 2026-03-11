@@ -60,9 +60,9 @@ const GAMES = [
 
 export default function GamesPage() {
   return (
-    <div>
+    <div className="w-full">
       <PageHeader title="게임 놀이" emoji="🌈" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {GAMES.map((game) => (
           <Link key={game.href} href={game.href}>
             <div

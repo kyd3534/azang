@@ -83,17 +83,17 @@ export default function CountingGame() {
   }, [question.count]);
 
   return (
-    <div>
+    <div className="w-full">
       <PageHeader title="숫자 세기" emoji="🔢" backHref="/dashboard/games" />
 
-      <div className="flex items-center justify-between mb-5 max-w-sm">
+      <div className="flex items-center justify-between mb-5">
         <span className="text-sm text-gray-500">점수: <b>{score}/{total}</b></span>
         <Button variant="outline" size="sm" onClick={() => { setScore(0); setTotal(0); setQuestion(generateQuestion()); }}>
           초기화
         </Button>
       </div>
 
-      <div className="max-w-sm space-y-6">
+      <div className="space-y-6">
         {/* 이모지 그리드 — 클릭하면 숫자 읽기 */}
         <AnimatePresence mode="wait">
           <motion.div key={`${question.emoji}-${question.count}`}

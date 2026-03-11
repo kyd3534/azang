@@ -1,61 +1,134 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import Link from "next/link";
-import InteractiveCharacter from "@/components/ui/interactive-3d-character";
+import FairyCharacter from "@/components/ui/fairy-character-client";
 
 const MENU_ITEMS = [
   {
     href: "/dashboard/story",
-    emoji: "🦄",
-    label: "동화 만들기",
-    desc: "AI가 나만의 동화를 써줘요",
-    bg: "linear-gradient(135deg, #FFD6EC 0%, #FFB3D8 100%)",
-    border: "#FF9DCE",
-    text: "#C2185B",
+    label: "동화",
+    bg: "linear-gradient(145deg, #FFB3D4, #FF7BAC)",
+    shadow: "rgba(255,100,160,0.4)",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* 책 */}
+        <rect x="8" y="10" width="14" height="28" rx="2" fill="white" fillOpacity="0.95"/>
+        <rect x="26" y="10" width="14" height="28" rx="2" fill="white" fillOpacity="0.85"/>
+        <rect x="21" y="9" width="6" height="30" rx="1" fill="white" fillOpacity="0.5"/>
+        {/* 책 내용 선 */}
+        <line x1="11" y1="16" x2="19" y2="16" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="11" y1="20" x2="19" y2="20" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="11" y1="24" x2="19" y2="24" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="11" y1="28" x2="16" y2="28" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="29" y1="16" x2="37" y2="16" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="29" y1="20" x2="37" y2="20" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="29" y1="24" x2="37" y2="24" stroke="#FF7BAC" strokeWidth="1.8" strokeLinecap="round"/>
+        {/* 별 */}
+        <path d="M38 6 l1.5 3.2 3.5.5-2.5 2.4.6 3.4L38 14l-3.1 1.5.6-3.4-2.5-2.4 3.5-.5z" fill="#FFD700"/>
+        <circle cx="12" cy="7" r="1.5" fill="white" fillOpacity="0.8"/>
+        <circle cx="7" cy="12" r="1" fill="white" fillOpacity="0.6"/>
+      </svg>
+    ),
   },
   {
     href: "/dashboard/english",
-    emoji: "⭐",
-    label: "영어 배우기",
-    desc: "재미있는 영단어 학습",
-    bg: "linear-gradient(135deg, #EDD6FF 0%, #D8B3FF 100%)",
-    border: "#CC88FF",
-    text: "#7B1FA2",
+    label: "영어",
+    bg: "linear-gradient(145deg, #C4B5FD, #8B5CF6)",
+    shadow: "rgba(139,92,246,0.4)",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* A */}
+        <text x="5" y="32" fill="white" fontSize="22" fontWeight="900" fontFamily="Arial Black, Arial" fillOpacity="0.95">A</text>
+        {/* B */}
+        <text x="18" y="26" fill="white" fontSize="17" fontWeight="900" fontFamily="Arial Black, Arial" fillOpacity="0.8">B</text>
+        {/* C */}
+        <text x="30" y="38" fill="white" fontSize="14" fontWeight="900" fontFamily="Arial Black, Arial" fillOpacity="0.7">C</text>
+        {/* 반짝이 */}
+        <path d="M40 8 l1.2 2.5 2.8.4-2 1.9.5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-1.9 2.8-.4z" fill="#FFD700"/>
+        <circle cx="8" cy="8" r="2" fill="white" fillOpacity="0.5"/>
+        <circle cx="42" cy="28" r="1.5" fill="white" fillOpacity="0.4"/>
+      </svg>
+    ),
   },
   {
     href: "/dashboard/hangul",
-    emoji: "🌸",
-    label: "한글 배우기",
-    desc: "한글 자모를 익혀요",
-    bg: "linear-gradient(135deg, #D6F5EE 0%, #B3EDD8 100%)",
-    border: "#88DDB3",
-    text: "#1B5E20",
+    label: "한글",
+    bg: "linear-gradient(145deg, #6EE7B7, #10B981)",
+    shadow: "rgba(16,185,129,0.4)",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* 가 */}
+        <text x="4" y="32" fill="white" fontSize="22" fontWeight="900" fontFamily="sans-serif" fillOpacity="0.95">가</text>
+        {/* 나 */}
+        <text x="22" y="24" fill="white" fontSize="15" fontWeight="900" fontFamily="sans-serif" fillOpacity="0.8">나</text>
+        {/* 다 */}
+        <text x="30" y="40" fill="white" fontSize="13" fontWeight="900" fontFamily="sans-serif" fillOpacity="0.7">다</text>
+        {/* 장식 */}
+        <circle cx="42" cy="10" r="4" fill="white" fillOpacity="0.3"/>
+        <circle cx="8" cy="42" r="2.5" fill="white" fillOpacity="0.25"/>
+      </svg>
+    ),
   },
   {
     href: "/dashboard/numbers",
-    emoji: "🎀",
-    label: "숫자 배우기",
-    desc: "숫자와 친해져요",
-    bg: "linear-gradient(135deg, #FFF3C8 0%, #FFE599 100%)",
-    border: "#FFD740",
-    text: "#F57F17",
+    label: "숫자",
+    bg: "linear-gradient(145deg, #FDE68A, #F59E0B)",
+    shadow: "rgba(245,158,11,0.4)",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* 1 */}
+        <text x="4" y="30" fill="white" fontSize="24" fontWeight="900" fontFamily="Arial Black, Arial" fillOpacity="0.95">1</text>
+        {/* 2 */}
+        <text x="18" y="24" fill="white" fontSize="18" fontWeight="900" fontFamily="Arial Black, Arial" fillOpacity="0.85">2</text>
+        {/* 3 */}
+        <text x="32" y="38" fill="white" fontSize="15" fontWeight="900" fontFamily="Arial Black, Arial" fillOpacity="0.75">3</text>
+        {/* 별/장식 */}
+        <path d="M40 7 l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="white" fillOpacity="0.9"/>
+        <circle cx="9" cy="42" r="2" fill="white" fillOpacity="0.4"/>
+      </svg>
+    ),
   },
   {
     href: "/dashboard/coloring",
-    emoji: "🦋",
-    label: "색칠하기",
-    desc: "AI 도안에 색을 칠해요",
-    bg: "linear-gradient(135deg, #FFE8D6 0%, #FFD0AA 100%)",
-    border: "#FFAA66",
-    text: "#E65100",
+    label: "색칠",
+    bg: "linear-gradient(145deg, #FDC89A, #F97316)",
+    shadow: "rgba(249,115,22,0.4)",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* 크레용 몸통 */}
+        <rect x="20" y="8" width="10" height="26" rx="3" fill="white" fillOpacity="0.95"/>
+        <rect x="20" y="8" width="10" height="8" rx="3" fill="#FFD700" fillOpacity="0.9"/>
+        {/* 크레용 끝 뾰족 */}
+        <path d="M20 34 L25 42 L30 34Z" fill="white" fillOpacity="0.9"/>
+        {/* 색 점들 */}
+        <circle cx="10" cy="14" r="5" fill="#FF5BA3" fillOpacity="0.9"/>
+        <circle cx="38" cy="14" r="5" fill="#60A5FA" fillOpacity="0.9"/>
+        <circle cx="10" cy="34" r="5" fill="#34D399" fillOpacity="0.9"/>
+        <circle cx="38" cy="34" r="5" fill="#A78BFA" fillOpacity="0.9"/>
+      </svg>
+    ),
   },
   {
     href: "/dashboard/games",
-    emoji: "🌈",
-    label: "게임 놀이",
-    desc: "미니 게임으로 학습해요",
-    bg: "linear-gradient(135deg, #D6EEFF 0%, #B3D8FF 100%)",
-    border: "#88BBFF",
-    text: "#1565C0",
+    label: "게임",
+    bg: "linear-gradient(145deg, #93C5FD, #3B82F6)",
+    shadow: "rgba(59,130,246,0.4)",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* 게임패드 본체 */}
+        <rect x="6" y="15" width="36" height="20" rx="10" fill="white" fillOpacity="0.92"/>
+        {/* 왼쪽 십자키 */}
+        <rect x="13" y="21" width="3" height="8" rx="1.5" fill="#3B82F6"/>
+        <rect x="10" y="24" width="9" height="3" rx="1.5" fill="#3B82F6"/>
+        {/* 오른쪽 버튼들 */}
+        <circle cx="32" cy="22" r="2.5" fill="#FF5BA3"/>
+        <circle cx="37" cy="26" r="2.5" fill="#FFD700"/>
+        <circle cx="27" cy="26" r="2.5" fill="#34D399"/>
+        <circle cx="32" cy="30" r="2.5" fill="#A78BFA"/>
+        {/* 상단 돌기 */}
+        <rect x="14" y="11" width="6" height="6" rx="3" fill="white" fillOpacity="0.7"/>
+        <rect x="28" y="11" width="6" height="6" rx="3" fill="white" fillOpacity="0.7"/>
+      </svg>
+    ),
   },
 ];
 
@@ -91,7 +164,7 @@ export default async function DashboardPage() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-3xl sm:text-4xl animate-bounce">🌟</span>
                 <h1 className="text-xl sm:text-2xl font-black" style={{ color: "#1E40AF" }}>
-                  오늘도 함께 배워요!
+                  몽글이와 함께 배워요!
                 </h1>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -111,26 +184,9 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* 장식 이모지 + 3D 캐릭터: 중앙 정렬 */}
-          <div className="flex flex-col items-center">
-            <div className="text-2xl space-x-3 mb-1 select-none">
-              {["🌸", "⭐", "🌷", "💖", "🌟"].map((e, i) => (
-                <span
-                  key={e}
-                  className="animate-bounce inline-block"
-                  style={{ animationDelay: `${i * 200}ms` }}
-                >
-                  {e}
-                </span>
-              ))}
-            </div>
-            <div style={{ width: 230, height: 230 }}>
-              <div className="hero-container" style={{ width: "100%", height: "100%" }}>
-                <div className="character-container" style={{ width: "100%", height: "100%" }}>
-                  <InteractiveCharacter />
-                </div>
-              </div>
-            </div>
+          {/* 요정 캐릭터 + 꾸미기 */}
+          <div className="flex flex-col items-center w-full mt-2">
+            <FairyCharacter />
           </div>
         </div>
       </div>
@@ -139,24 +195,22 @@ export default async function DashboardPage() {
       <h2 className="text-sm font-black mb-3" style={{ color: "#94A3B8" }}>
         무엇을 배울까요? 🎈
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {MENU_ITEMS.map((item) => (
           <Link key={item.href} href={item.href}>
             <div
-              className="rounded-2xl p-4 sm:p-5 cursor-pointer transition-all duration-200 active:scale-95 hover:-translate-y-0.5 break-words"
+              className="rounded-2xl cursor-pointer transition-all duration-200 active:scale-95 hover:-translate-y-1 flex flex-col items-center justify-center gap-2 py-4 px-2"
               style={{
                 background: item.bg,
-                border: `2px solid ${item.border}`,
-                boxShadow: `0 4px 14px ${item.border}44`,
+                boxShadow: `0 6px 20px ${item.shadow}`,
               }}
             >
-              <div className="text-3xl sm:text-4xl mb-2 sm:mb-3">{item.emoji}</div>
-              <h2 className="font-black text-sm break-words" style={{ color: item.text }}>
+              <div className="w-14 h-14 sm:w-16 sm:h-16">
+                {item.icon}
+              </div>
+              <span className="font-black text-sm text-white" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
                 {item.label}
-              </h2>
-              <p className="text-xs mt-1 break-words opacity-70 font-medium" style={{ color: item.text }}>
-                {item.desc}
-              </p>
+              </span>
             </div>
           </Link>
         ))}

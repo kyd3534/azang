@@ -162,7 +162,7 @@ export default function DrawingGame() {
   }
 
   return (
-    <div>
+    <div className="w-full">
       <PageHeader title="따라 그리기" emoji="✏️" backHref="/dashboard/games" />
 
       {/* Shape selector */}
