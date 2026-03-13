@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { DeviceModeProvider, DevicePreview, DeviceToolbar } from "@/components/dev/DevicePreview";
+import PwaUpdater from "@/components/PwaUpdater";
+import ClickSound from "@/components/ClickSound";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-sans",
@@ -42,6 +44,8 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={`${notoSansKR.variable} antialiased`}>
+        <PwaUpdater />
+        <ClickSound />
         <DeviceModeProvider>
           <DeviceToolbar />
           <DevicePreview>{children}</DevicePreview>

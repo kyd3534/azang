@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, Suspense, useCallback, useMemo, useState, Component, type ReactNode } from "react";
+import { useRef, Suspense, useEffect, useMemo, useState, Component, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, Center, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
@@ -86,40 +86,84 @@ function CharacterScene({
 
 /* ─── 메인 컴포넌트 ─────────────────────────────────────────── */
 export default function FairyCharacter() {
-  const dragRef   = useRef({ on: false, curX: 0, curY: 0, prevX: 0, prevY: 0 });
-  const mouseRef  = useRef({ x: 0, y: 0 });
+  const dragRef       = useRef({ on: false, curX: 0, curY: 0, prevX: 0, prevY: 0 });
+  const mouseRef      = useRef({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    dragRef.current.curX = e.clientX;
-    dragRef.current.curY = e.clientY;
-    if (!dragRef.current.on && canvasWrapRef.current) {
-      const r = canvasWrapRef.current.getBoundingClientRect();
+  // R3F Canvas가 내부에서 stopPropagation() 호출 → React synthetic events 막힘
+  // native addEventListener로 직접 등록해서 우회
+  useEffect(() => {
+    const el = canvasWrapRef.current;
+    if (!el) return;
+
+    const getRect = () => el.getBoundingClientRect();
+
+    const updateMouse = (clientX: number, clientY: number) => {
+      const r = getRect();
       mouseRef.current = {
-        x:  (e.clientX - r.left - r.width  / 2) / (r.width  / 2),
-        y: -(e.clientY - r.top  - r.height / 2) / (r.height / 2),
+        x:  (clientX - r.left - r.width  / 2) / (r.width  / 2),
+        y: -(clientY - r.top  - r.height / 2) / (r.height / 2),
       };
-    }
-  }, []);
+    };
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-    dragRef.current = { on: true, curX: e.clientX, curY: e.clientY, prevX: e.clientX, prevY: e.clientY };
-  }, []);
+    // ── 터치 ──
+    const onTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      dragRef.current = { on: true, curX: t.clientX, curY: t.clientY, prevX: t.clientX, prevY: t.clientY };
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault(); // 스크롤 방지
+      const t = e.touches[0];
+      if (dragRef.current.on) {
+        dragRef.current.curX = t.clientX;
+        dragRef.current.curY = t.clientY;
+      } else {
+        updateMouse(t.clientX, t.clientY);
+      }
+    };
+    const onTouchEnd = () => {
+      dragRef.current.on = false;
+      mouseRef.current = { x: 0, y: 0 };
+    };
 
-  const onPointerUp = useCallback(() => { dragRef.current.on = false; }, []);
+    // ── 마우스 ──
+    const onMouseMove = (e: MouseEvent) => {
+      if (dragRef.current.on) {
+        dragRef.current.curX = e.clientX;
+        dragRef.current.curY = e.clientY;
+      } else {
+        updateMouse(e.clientX, e.clientY);
+      }
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      dragRef.current = { on: true, curX: e.clientX, curY: e.clientY, prevX: e.clientX, prevY: e.clientY };
+    };
+    const onMouseUp = () => { dragRef.current.on = false; };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove",  onTouchMove,  { passive: false });
+    el.addEventListener("touchend",   onTouchEnd,   { passive: true  });
+    el.addEventListener("mousemove",  onMouseMove,  { passive: true  });
+    el.addEventListener("mousedown",  onMouseDown,  { passive: true  });
+    window.addEventListener("mouseup", onMouseUp);
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove",  onTouchMove);
+      el.removeEventListener("touchend",   onTouchEnd);
+      el.removeEventListener("mousemove",  onMouseMove);
+      el.removeEventListener("mousedown",  onMouseDown);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
 
   return (
     <div
       ref={canvasWrapRef}
-      onPointerMove={onPointerMove}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerLeave={() => { mouseRef.current = { x: 0, y: 0 }; dragRef.current.on = false; }}
       style={{
         width: "100%", maxWidth: 320, height: 320,
-        cursor: "grab",
+        cursor: "grab", touchAction: "none",
         filter: "drop-shadow(0 12px 32px rgba(168,85,247,0.22)) drop-shadow(0 0 20px #c4b5fd55)",
       }}
     >

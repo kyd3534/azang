@@ -1,0 +1,24 @@
+{
+  "name": "아장아장",
+  "short_name": "아장아장",
+  "description": "아이의 성장을 함께하는 AI 기반 유아 학습 플랫폼",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#FFF5FB",
+  "theme_color": "#EC4899",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PageHeader from "@/components/ui/page-header";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 const GAMES = [
   {
@@ -58,7 +59,11 @@ const GAMES = [
   },
 ];
 
-export default function GamesPage() {
+export default async function GamesPage() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAdmin = user?.email === "kyd3534@gmail.com";
+
   return (
     <div className="w-full">
       <PageHeader title="게임 놀이" emoji="🌈" />
@@ -79,6 +84,22 @@ export default function GamesPage() {
             </div>
           </Link>
         ))}
+        {isAdmin && (
+          <Link href="/dashboard/games/videos">
+            <div
+              className="rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:-translate-y-1"
+              style={{
+                background: "linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)",
+                border: "2px solid #7DD3FC",
+                boxShadow: "0 4px 16px #7DD3FC44",
+              }}
+            >
+              <div className="text-4xl mb-3">📺</div>
+              <h2 className="font-black break-words" style={{ color: "#0369A1" }}>영상 보기</h2>
+              <p className="text-xs mt-1 break-words opacity-70 font-medium" style={{ color: "#0369A1" }}>재미있는 영상을 봐요</p>
+            </div>
+          </Link>
+        )}
       </div>
     </div>
   );

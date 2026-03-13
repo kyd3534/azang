@@ -128,6 +128,15 @@
     word-break: keep-all;
     overflow-wrap: break-word;
   }
+  /* 버튼 터치 반응속도 최적화 */
+  button, a, [role="button"], [role="tab"], [role="menuitem"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  button:active, a:active, [role="button"]:active {
+    transition-duration: 50ms !important;
+  }
 }
 
 /* ── 블루 카드 그림자 ── */

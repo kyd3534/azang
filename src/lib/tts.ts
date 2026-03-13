@@ -390,12 +390,17 @@ export interface SpeakOptions {
   raw?: boolean; // true면 preprocessText 생략
 }
 
-/** Web Speech 보이스 사전 로드 (컴포넌트 마운트 시 호출) */
+/** Web Speech 보이스 사전 로드 (앱 시작 시 호출 → 첫 재생 지연 제거) */
 export function preloadVoices() {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
-  const voices = window.speechSynthesis.getVoices();
+  const synth = window.speechSynthesis;
+  // getVoices() 호출 자체가 브라우저에 음성 목록 요청을 트리거
+  const voices = synth.getVoices();
   if (voices.length === 0) {
-    window.speechSynthesis.addEventListener("voiceschanged", () => {}, { once: true });
+    // 아직 로드 안 됐으면 이벤트 등록해서 캐싱 유도
+    synth.addEventListener("voiceschanged", () => {
+      synth.getVoices(); // 목록 캐싱 트리거
+    }, { once: true });
   }
 }
 
@@ -405,7 +410,8 @@ export function speak(text: string, options: SpeakOptions = {}) {
   const synth = window.speechSynthesis;
   const { lang = "ko", gender, onEnd } = options;
 
-  // 항상 cancel → clean state 보장
+  // cancel 전에 재생 중이었는지 체크 → 재생 중이었으면 80ms 대기, 아니면 즉시 재생
+  const hadSpeech = synth.speaking || synth.pending;
   stopKeepAlive();
   stopMediaSession();
   setSpeaking(false);
@@ -435,19 +441,23 @@ export function speak(text: string, options: SpeakOptions = {}) {
     synth.speak(utter);
   };
 
-  // cancel 후 80ms 대기 → Chrome 내부 상태 정리 + 빠른 반응
+  // 재생 중이었으면 cancel 후 80ms 대기 (Chrome 내부 상태 정리), 아니면 즉시 실행
   let called = false;
   const trySpeak = () => {
     if (called) return;
     called = true;
-    setTimeout(doSpeak, 80);
+    if (hadSpeech) {
+      setTimeout(doSpeak, 80);
+    } else {
+      doSpeak();
+    }
   };
 
   if (synth.getVoices().length > 0) {
     trySpeak();
   } else {
     synth.addEventListener("voiceschanged", () => trySpeak(), { once: true });
-    setTimeout(() => { if (synth.getVoices().length > 0) trySpeak(); }, 800);
+    setTimeout(() => { if (synth.getVoices().length > 0) trySpeak(); }, 500);
   }
 }
 
@@ -548,6 +558,7 @@ export function speakLong(text: string, opts: SpeakOptions = {}) {
   const sentences = raw.length > 0 ? raw : [text.trim()].filter(Boolean);
   if (sentences.length === 0) return;
 
+  const hadSpeech = synth.speaking || synth.pending;
   stopKeepAlive();
   stopMediaSession();
   synth.cancel();
@@ -594,11 +605,15 @@ export function speakLong(text: string, opts: SpeakOptions = {}) {
     synth.speak(utter);
   }
 
-  // cancel 후 항상 250ms 대기
+  // 재생 중이었으면 100ms 대기, 아니면 즉시 실행
   if (synth.getVoices().length > 0) {
-    setTimeout(speakNext, 250);
+    if (hadSpeech) {
+      setTimeout(speakNext, 100);
+    } else {
+      speakNext();
+    }
   } else {
-    synth.addEventListener("voiceschanged", () => setTimeout(speakNext, 250), { once: true });
-    setTimeout(() => { if (synth.getVoices().length > 0) setTimeout(speakNext, 250); }, 1500);
+    synth.addEventListener("voiceschanged", () => { hadSpeech ? setTimeout(speakNext, 100) : speakNext(); }, { once: true });
+    setTimeout(() => { if (synth.getVoices().length > 0) { hadSpeech ? setTimeout(speakNext, 100) : speakNext(); } }, 500);
   }
 }

@@ -132,7 +132,7 @@ export default function InteractiveCharacter() {
         onResize(this: any, width: number, height: number) {
           this.zoom = Math.min(width, height) / SCENE_SIZE;
         },
-        dragRotate: true,
+        dragRotate: false,
       });
 
       const model = createCharacterModel(illo);
@@ -189,7 +189,23 @@ export default function InteractiveCharacter() {
         stateRef.current.mouseTimeout = setTimeout(resetAll, 2000);
       };
 
+      const handleTouch = (e: TouchEvent) => {
+        if (e.touches.length === 0) return;
+        const touch = e.touches[0];
+        TweenLite.killTweensOf(model.headAnchor.rotate);
+        TweenLite.killTweensOf(model.bodyAnchor.rotate);
+        clearTimeout(lookAroundTimeout);
+        watchPlayer(touch.clientX, touch.clientY);
+        clearTimeout(stateRef.current.mouseTimeout);
+        stateRef.current.mouseTimeout = setTimeout(resetAll, 2000);
+      };
+
       document.body.addEventListener("mousemove", handleMouseMove);
+      // body 레벨 + canvas 레벨 모두 등록 (Zdog dragRotate가 canvas 이벤트를 가로채는 경우 대비)
+      document.body.addEventListener("touchstart", handleTouch, { passive: true });
+      document.body.addEventListener("touchmove", handleTouch, { passive: true });
+      canvas.addEventListener("touchstart", handleTouch, { passive: true });
+      canvas.addEventListener("touchmove", handleTouch, { passive: true });
 
       const animate = () => {
         illo.updateRenderGraph();
@@ -200,6 +216,10 @@ export default function InteractiveCharacter() {
       cleanupFn = () => {
         if (stateRef.current.animationFrameId) cancelAnimationFrame(stateRef.current.animationFrameId);
         document.body.removeEventListener("mousemove", handleMouseMove);
+        document.body.removeEventListener("touchstart", handleTouch);
+        document.body.removeEventListener("touchmove", handleTouch);
+        canvas.removeEventListener("touchstart", handleTouch);
+        canvas.removeEventListener("touchmove", handleTouch);
         clearTimeout(lookAroundTimeout);
         if (window.TweenMax) window.TweenMax.killAll();
       };
@@ -232,7 +252,7 @@ export default function InteractiveCharacter() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ display: "block", width: "100%", height: "100%", background: "transparent" }}
+      style={{ display: "block", width: "100%", height: "100%", background: "transparent", touchAction: "none" }}
     />
   );
 }

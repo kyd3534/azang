@@ -104,25 +104,46 @@ function createCards(pairs: string[]): Card[] {
   }));
 }
 
+type Phase = "preview" | "playing";
+
 export default function MemoryGame() {
   const [theme, setTheme] = useState(() => pickRandomTheme());
   const [cards, setCards] = useState<Card[]>(() => createCards(pickRandomTheme().pairs));
   const [selected, setSelected] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
+  const [phase, setPhase] = useState<Phase>("preview");
+  const [countdown, setCountdown] = useState(3);
 
   const matched = cards.filter((c) => c.isMatched).length / 2;
   const isWon = matched === theme.pairs.length;
 
+  // 미리보기 3초 카운트다운
+  useEffect(() => {
+    if (phase !== "preview") return;
+    setCountdown(3);
+    const tick = setInterval(() => {
+      setCountdown((n) => {
+        if (n <= 1) {
+          clearInterval(tick);
+          setPhase("playing");
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [phase]);
+
   const handleFlip = useCallback((id: number) => {
-    if (isChecking || selected.length >= 2) return;
+    if (phase !== "playing" || isChecking || selected.length >= 2) return;
     const card = cards.find((c) => c.id === id);
     if (!card || card.isFlipped || card.isMatched) return;
 
     playFlipSound();
     setCards((prev) => prev.map((c) => c.id === id ? { ...c, isFlipped: true } : c));
     setSelected((prev) => [...prev, id]);
-  }, [isChecking, selected, cards]);
+  }, [phase, isChecking, selected, cards]);
 
   useEffect(() => {
     if (selected.length !== 2) return;
@@ -151,6 +172,7 @@ export default function MemoryGame() {
     setSelected([]);
     setMoves(0);
     setIsChecking(false);
+    setPhase("preview");
   }
 
   return (
@@ -172,6 +194,22 @@ export default function MemoryGame() {
           </span>
         </div>
 
+        {/* 미리보기 배너 */}
+        {phase === "preview" && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-4 rounded-2xl p-3.5 text-center"
+            style={{ background: "linear-gradient(135deg, #FFF0F8, #F0F4FF)", border: "2px solid #FBCFE8" }}
+          >
+            <p className="text-base font-black" style={{ color: "#EC4899" }}>
+              👀 카드를 외우세요!
+            </p>
+            <p className="text-sm font-bold mt-0.5" style={{ color: "#9CA3AF" }}>
+              <span className="text-2xl font-black" style={{ color: "#4F46E5" }}>{countdown}</span>초 후 시작
+            </p>
+          </motion.div>
+        )}
+
         {isWon && (
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
             className="mb-5 rounded-xl bg-yellow-50 border border-yellow-200 p-4 text-center">
@@ -181,24 +219,30 @@ export default function MemoryGame() {
         )}
 
         <div className="grid grid-cols-4 gap-3 sm:gap-4">
-          {cards.map((card) => (
-            <motion.button
-              key={card.id}
-              onClick={() => handleFlip(card.id)}
-              whileTap={{ scale: 0.92 }}
-              className={`aspect-square rounded-2xl flex items-center justify-center transition-all duration-200 border-2 ${
-                card.isMatched
-                  ? "bg-green-50 border-green-200"
-                  : card.isFlipped
-                  ? "bg-white border-pink-200 shadow-notion"
-                  : "bg-pink-50 border-pink-200 hover:bg-pink-100 cursor-pointer"
-              }`}
-            >
-              <span style={{ fontSize: card.isFlipped || card.isMatched ? "clamp(2.4rem,12vw,5.5rem)" : "clamp(1.2rem,5vw,2.2rem)", lineHeight: 1 }}>
-                {card.isFlipped || card.isMatched ? card.emoji : "?"}
-              </span>
-            </motion.button>
-          ))}
+          {cards.map((card) => {
+            const revealed = phase === "preview" || card.isFlipped || card.isMatched;
+            return (
+              <motion.button
+                key={card.id}
+                onClick={() => handleFlip(card.id)}
+                whileTap={phase === "playing" ? { scale: 0.92 } : {}}
+                className={`aspect-square rounded-2xl flex items-center justify-center transition-all duration-200 border-2 ${
+                  card.isMatched
+                    ? "bg-green-50 border-green-200"
+                    : phase === "preview"
+                    ? "bg-purple-50 border-purple-200"
+                    : card.isFlipped
+                    ? "bg-white border-pink-200 shadow-notion"
+                    : "bg-pink-50 border-pink-200 hover:bg-pink-100 cursor-pointer"
+                }`}
+                style={{ cursor: phase === "preview" ? "default" : undefined }}
+              >
+                <span style={{ fontSize: revealed ? "clamp(2.4rem,12vw,5.5rem)" : "clamp(1.2rem,5vw,2.2rem)", lineHeight: 1 }}>
+                  {revealed ? card.emoji : "?"}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
     </div>
   );

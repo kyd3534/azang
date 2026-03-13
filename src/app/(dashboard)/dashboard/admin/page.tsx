@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
-import { Trash2, Upload } from "lucide-react";
+import { Trash2, Upload, Video } from "lucide-react";
+import Link from "next/link";
 
 type ColoringTemplate = {
   id: string;
@@ -195,6 +196,25 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* 영상 관리 링크 */}
+      <Link href="/dashboard/admin/videos">
+        <div
+          className="rounded-2xl p-5 flex items-center gap-4 cursor-pointer transition-all hover:-translate-y-0.5"
+          style={{ background: "white", border: "2px solid #BFDBFE", boxShadow: "0 4px 24px rgba(14,165,233,0.08)" }}
+        >
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #E0F2FE, #BAE6FD)" }}
+          >
+            <Video size={22} style={{ color: "#0369A1" }} />
+          </div>
+          <div>
+            <p className="font-black" style={{ color: "#0369A1" }}>📺 영상 관리</p>
+            <p className="text-xs text-gray-400 mt-0.5">NAS 연결 설정 및 영상 목록 관리</p>
+          </div>
+        </div>
+      </Link>
 
       <p className="text-xs text-center text-gray-300">관리자 전용 페이지 · kyd3534@gmail.com</p>
     </div>

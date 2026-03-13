@@ -15,6 +15,37 @@ const PALETTE: readonly string[] = [
 
 type Tool = "fill" | "brush" | "eraser";
 
+// ── 도구 SVG 아이콘 ───────────────────────────────────────────────────────────
+function FillIcon({ c = "currentColor", s = 18 }: { c?: string; s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m19 11-8-8-8.5 8.5a5.5 5.5 0 0 0 7.78 7.78L19 11Z" />
+      <path d="m5 2 5 5" />
+      <path d="M2 13h15" />
+      <path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z" />
+    </svg>
+  );
+}
+function BrushIcon({ c = "currentColor", s = 18 }: { c?: string; s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" />
+      <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.5 1 2 6.5 1.5 7-2 .24-1.64-1-3.52-2-3.52Z" />
+    </svg>
+  );
+}
+function EraserIcon({ c = "currentColor", s = 18 }: { c?: string; s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+      <path d="M22 21H7" />
+      <path d="m5 11 9 9" />
+    </svg>
+  );
+}
+
+const QUICK_COLORS = ["#FF3366", "#FF8C00", "#FFD700", "#00CC44", "#0066FF", "#9933FF", "#FF0099", "#000000"] as const;
+
 function hexToRgb(hex: string): [number, number, number] {
   const c = hex.replace("#", "");
   return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)];
@@ -82,12 +113,15 @@ export default function TemplateColoringStudio({
   const [brushSize, setBrushSize] = useState(15);
   const [undoCount, setUndoCount] = useState(0);
   const [corsOk, setCorsOk] = useState<boolean | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fillCanvasRef = useRef<HTMLCanvasElement>(null);
   const brushCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  type UndoEntry = { canvas: "fill" | "brush"; snapshot: ImageData };
+  type UndoEntry =
+    | { canvas: "fill" | "brush"; snapshot: ImageData }
+    | { canvas: "both"; fillSnapshot: ImageData; brushSnapshot: ImageData };
   const undoStack = useRef<UndoEntry[]>([]);
   const boundaryRef = useRef<Uint8ClampedArray | null>(null);
   const isDrawing = useRef(false);
@@ -97,7 +131,7 @@ export default function TemplateColoringStudio({
 
   const supabase = createClient();
 
-  // 캔버스 크기 → 컨테이너 동기화
+  // 캔버스 크기 동기화
   useEffect(() => {
     const container = containerRef.current;
     const fc = fillCanvasRef.current;
@@ -154,7 +188,7 @@ export default function TemplateColoringStudio({
         img.crossOrigin = "anonymous";
         img.onload = () => { ctx.drawImage(img, 0, 0, tmp.width, tmp.height); res(true); };
         img.onerror = () => res(false);
-        img.src = imageUrl + "?t=" + Date.now(); // cache bust for CORS
+        img.src = imageUrl + "?t=" + Date.now();
       });
 
       if (!ok) { setCorsOk(false); return null; }
@@ -270,19 +304,33 @@ export default function TemplateColoringStudio({
     if (undoStack.current.length === 0) return;
     const action = undoStack.current.pop()!;
     setUndoCount(undoStack.current.length);
-    const cvs = action.canvas === "fill" ? fillCanvasRef.current : brushCanvasRef.current;
-    const ctx = cvs?.getContext("2d");
-    if (cvs && ctx) ctx.putImageData(action.snapshot, 0, 0);
+    if (action.canvas === "both") {
+      const fc = fillCanvasRef.current;
+      const bc = brushCanvasRef.current;
+      if (fc) { const ctx = fc.getContext("2d"); if (ctx) { ctx.fillStyle = "white"; ctx.fillRect(0, 0, fc.width, fc.height); ctx.putImageData(action.fillSnapshot, 0, 0); } }
+      if (bc) { const ctx = bc.getContext("2d"); if (ctx) { ctx.clearRect(0, 0, bc.width, bc.height); ctx.putImageData(action.brushSnapshot, 0, 0); } }
+    } else {
+      const cvs = action.canvas === "fill" ? fillCanvasRef.current : brushCanvasRef.current;
+      const ctx = cvs?.getContext("2d");
+      if (cvs && ctx) ctx.putImageData(action.snapshot, 0, 0);
+    }
   }
 
   function handleClear() {
-    if (!window.confirm("모두 지울까요?")) return;
-    undoStack.current = []; setUndoCount(0);
     const fc = fillCanvasRef.current;
-    const fCtx = fc?.getContext("2d");
-    if (fc && fCtx) { fCtx.fillStyle = "white"; fCtx.fillRect(0, 0, fc.width, fc.height); }
     const bc = brushCanvasRef.current;
+    const fCtx = fc?.getContext("2d");
     const bCtx = bc?.getContext("2d");
+    if (!fc || !fCtx) return;
+    const fillSnap = fCtx.getImageData(0, 0, fc.width, fc.height);
+    const brushSnap = bCtx && bc ? bCtx.getImageData(0, 0, bc.width, bc.height) : null;
+    if (brushSnap && bc) {
+      undoStack.current = [...undoStack.current.slice(-19), { canvas: "both", fillSnapshot: fillSnap, brushSnapshot: brushSnap }];
+    } else {
+      undoStack.current = [...undoStack.current.slice(-19), { canvas: "fill", snapshot: fillSnap }];
+    }
+    setUndoCount(undoStack.current.length);
+    fCtx.fillStyle = "white"; fCtx.fillRect(0, 0, fc.width, fc.height);
     if (bc && bCtx) bCtx.clearRect(0, 0, bc.width, bc.height);
     if (persistToDb) supabase.from("coloring_strokes").upsert({ page_id: pageId, strokes: {} });
   }
@@ -313,157 +361,215 @@ export default function TemplateColoringStudio({
     }
   }
 
-  const TOOLS = [
-    { id: "brush" as Tool, icon: "🖌️", label: "붓" },
-    { id: "eraser" as Tool, icon: "🧹", label: "지우개" },
-    { id: "fill" as Tool, icon: "🪣", label: "채우기" },
+  const TOOL_DEFS = [
+    { id: "brush"  as Tool, label: "붓",     Icon: BrushIcon },
+    { id: "eraser" as Tool, label: "지우개",  Icon: EraserIcon },
+    { id: "fill"   as Tool, label: "채우기", Icon: FillIcon },
   ];
 
-  const sliderStyle: React.CSSProperties = {
-    writingMode: "vertical-lr", direction: "rtl", height: 80, cursor: "pointer",
-  };
-
   return (
-    <div className="flex flex-col gap-3 select-none">
-      {/* 상단 바 */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex gap-2 ml-auto flex-wrap">
-          <button onClick={handleUndo} disabled={undoCount === 0}
-            className="px-3 py-2 rounded-xl text-sm font-bold"
-            style={{ background: "#EFF6FF", color: undoCount === 0 ? "#93C5FD" : "#3B82F6", border: "2px solid #BFDBFE" }}>
-            ↩ 되돌리기
-          </button>
-          <button onClick={handleClear} className="px-3 py-2 rounded-xl text-sm font-bold"
-            style={{ background: "#FEF2F2", color: "#EF4444", border: "2px solid #FECACA" }}>
-            🗑 초기화
-          </button>
-          <button onClick={handleSave} className="px-3 py-2 rounded-xl text-sm font-bold"
-            style={{ background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "white", border: "none" }}>
-            💾 저장
-          </button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-2 select-none">
 
-      <div className="flex gap-3 items-start">
-        {/* 도구 사이드바 */}
-        <div className="flex flex-col gap-2 flex-shrink-0">
-          {TOOLS.map((t) => (
-            <button key={t.id} onClick={() => setTool(t.id)}
-              className="flex flex-col items-center justify-center rounded-2xl transition-all"
+      {/* ── Row 1: 도구 세그먼트 + 액션 버튼 ── */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1">
+          {TOOL_DEFS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTool(id)}
+              className="flex flex-col items-center justify-center gap-1 rounded-2xl transition-all flex-1 py-2.5"
               style={{
-                width: 60, height: 60,
-                background: tool === t.id ? "linear-gradient(135deg,#818CF8,#6366F1)" : "white",
-                color: tool === t.id ? "white" : "#6B7280",
-                border: `2px solid ${tool === t.id ? "transparent" : "#E5E7EB"}`,
-                boxShadow: tool === t.id ? "0 4px 14px rgba(99,102,241,0.35)" : "none",
-              }}>
-              <span className="text-2xl">{t.icon}</span>
-              <span className="text-xs font-bold mt-0.5">{t.label}</span>
+                background: tool === id ? (id === "eraser" ? "#FEF2F2" : id === "fill" ? "#EEF2FF" : "#FDF4FF") : "#F1F5F9",
+                border: tool === id
+                  ? `2.5px solid ${id === "eraser" ? "#FCA5A5" : id === "fill" ? "#A5B4FC" : "#E879F9"}`
+                  : "2.5px solid transparent",
+                boxShadow: tool === id ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
+              }}
+            >
+              <Icon
+                c={tool === id ? (id === "eraser" ? "#EF4444" : id === "fill" ? "#4F46E5" : "#A21CAF") : "#9CA3AF"}
+                s={22}
+              />
+              <span className="text-[10px] font-bold" style={{ color: tool === id ? (id === "eraser" ? "#EF4444" : id === "fill" ? "#4F46E5" : "#A21CAF") : "#9CA3AF" }}>
+                {label}
+              </span>
             </button>
           ))}
-
-          {tool !== "fill" && (
-            <div className="flex flex-col items-center gap-1 rounded-2xl p-2"
-              style={{ background: "white", border: "2px solid #E5E7EB" }}>
-              <span className="text-xs font-bold text-gray-400">크기</span>
-              <input type="range"
-                min={tool === "eraser" ? 10 : 4} max={tool === "eraser" ? 50 : 30}
-                value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))}
-                style={sliderStyle}
-              />
-              <span className="text-xs text-gray-400">{brushSize}</span>
-            </div>
-          )}
-
-          <div className="rounded-full self-center"
-            style={{ width: 44, height: 44, background: color, border: "3px solid white", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
-          />
         </div>
+        <div className="flex gap-1 flex-shrink-0">
+          <button
+            onClick={handleUndo} disabled={undoCount === 0}
+            className="w-9 h-9 rounded-xl font-bold flex items-center justify-center text-sm transition-colors"
+            style={{ background: "#EFF6FF", color: undoCount === 0 ? "#93C5FD" : "#3B82F6", border: "2px solid #BFDBFE" }}
+            title="실행취소"
+          >↩</button>
+          <button
+            onClick={handleClear}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm"
+            style={{ background: "#FEF2F2", color: "#EF4444", border: "2px solid #FECACA" }}
+            title="초기화"
+          >🗑</button>
+          <button
+            onClick={handleSave}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm"
+            style={{ background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "white" }}
+            title="저장"
+          >💾</button>
+        </div>
+      </div>
 
-        {/* 3-레이어 캔버스 영역 */}
-        {/*
-          레이어 구조:
-          z1: fill canvas (채우기 색상, 흰 배경)
-          z2: brush canvas (자유 브러시)
-          z3: 스케치 이미지 (mix-blend-mode: multiply → 흰 부분 투명, 검은 선만 보임)
-        */}
+      {/* ── Row 2: 색상 선택 (항상 표시) ── */}
+      <div
+        className="flex items-center gap-1.5 rounded-2xl px-3 py-2"
+        style={{ background: "white", border: "2px solid #E5E7EB" }}
+      >
         <div
-          ref={containerRef}
-          className="flex-1 relative rounded-2xl overflow-hidden"
+          className="rounded-full flex-shrink-0"
           style={{
-            border: "3px solid #E5E7EB",
-            cursor: tool === "fill" ? "crosshair" : "default",
-            background: "white",
-            isolation: "isolate",
+            width: 28, height: 28,
+            background: color,
+            border: "3px solid white",
+            boxShadow: "0 0 0 2px #6366F1",
           }}
-          onClick={handleContainerClick}
-        >
-          {/* 높이 기준 이미지 (투명, 레이아웃용) */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt=""
-            aria-hidden
-            className="block w-full h-auto"
-            style={{ visibility: "hidden" }}
-          />
-
-          {/* z1: fill 캔버스 */}
-          <canvas ref={fillCanvasRef}
-            className="absolute inset-0 w-full h-full"
-            style={{ zIndex: 1, pointerEvents: "none" }}
-          />
-
-          {/* z2: brush 캔버스 */}
-          <canvas ref={brushCanvasRef}
-            className="absolute inset-0 w-full h-full"
+        />
+        <div style={{ width: 1, height: 22, background: "#E5E7EB", flexShrink: 0 }} />
+        {QUICK_COLORS.map((c) => (
+          <button
+            key={c}
+            onClick={() => setColor(c)}
+            className="rounded-full flex-shrink-0 transition-transform"
             style={{
-              zIndex: 2,
-              touchAction: "none",
-              pointerEvents: tool !== "fill" ? "auto" : "none",
-              cursor: tool === "brush" ? "crosshair" : tool === "eraser" ? "cell" : "default",
+              width: 24, height: 24,
+              background: c,
+              border: color === c ? "2.5px solid #4F46E5" : "2px solid #D1D5DB",
+              transform: color === c ? "scale(1.25)" : "scale(1)",
             }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
-            onPointerCancel={handlePointerUp}
           />
-
-          {/* z3: 스케치 이미지 오버레이 (검은 선만 보임) */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt="색칠 도안"
-            className="absolute inset-0 w-full h-full object-contain"
-            style={{ zIndex: 3, pointerEvents: "none", mixBlendMode: "multiply" }}
-          />
-        </div>
+        ))}
+        <button
+          onClick={() => setPaletteOpen((p) => !p)}
+          className="rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs transition-colors"
+          style={{
+            width: 24, height: 24,
+            background: paletteOpen ? "#4F46E5" : "#F3F4F6",
+            color: paletteOpen ? "white" : "#6B7280",
+            border: "2px dashed #D1D5DB",
+          }}
+          title="색상 더보기"
+        >
+          {paletteOpen ? "▲" : "＋"}
+        </button>
       </div>
 
-      {/* 색상 팔레트 */}
-      <div className="rounded-2xl p-3 bg-white" style={{ border: "2px solid #E5E7EB" }}>
-        <p className="text-xs font-bold text-gray-400 mb-2">🎨 색상 팔레트</p>
-        <div className="flex flex-wrap gap-2 items-center">
-          {PALETTE.map((c, idx) => (
-            <button key={`palette-${idx}`} onClick={() => setColor(c)}
-              className="rounded-full transition-all"
-              style={{
-                width: 32, height: 32, background: c,
-                border: color === c ? "3px solid #4F46E5" : "2px solid #D1D5DB",
-                transform: color === c ? "scale(1.25)" : "scale(1)",
-                boxShadow: color === c ? "0 0 0 2px white, 0 0 0 4px #4F46E5" : "none",
-                transition: "transform 0.15s",
-              }}
-            />
-          ))}
-          <label className="rounded-full flex items-center justify-center text-gray-400 font-bold text-xl cursor-pointer"
-            style={{ width: 32, height: 32, border: "2px dashed #D1D5DB", background: "white" }}>
-            +
-            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="sr-only" />
-          </label>
+      {/* ── Row 3: 전체 팔레트 (펼침) ── */}
+      {paletteOpen && (
+        <div className="rounded-2xl p-3" style={{ background: "white", border: "2px solid #E5E7EB" }}>
+          <p className="text-xs font-bold mb-2" style={{ color: "#9CA3AF" }}>🎨 모든 색상</p>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {PALETTE.map((c, idx) => (
+              <button
+                key={`pal-${idx}`}
+                onClick={() => { setColor(c); setPaletteOpen(false); }}
+                className="rounded-full transition-all"
+                style={{
+                  width: 30, height: 30, background: c,
+                  border: color === c ? "3px solid #4F46E5" : "2px solid #D1D5DB",
+                  transform: color === c ? "scale(1.2)" : "scale(1)",
+                  boxShadow: color === c ? "0 0 0 2px white, 0 0 0 4px #4F46E5" : "none",
+                  transition: "transform 0.12s",
+                }}
+              />
+            ))}
+            <label
+              className="rounded-full flex items-center justify-center font-black text-base cursor-pointer"
+              style={{ width: 30, height: 30, border: "2px dashed #D1D5DB", background: "white", color: "#9CA3AF" }}
+              title="직접 색 고르기"
+            >
+              +
+              <input type="color" value={color} onChange={(e) => { setColor(e.target.value); setPaletteOpen(false); }} className="sr-only" />
+            </label>
+          </div>
         </div>
+      )}
+
+      {/* ── Row 4: 크기 슬라이더 ── */}
+      {tool !== "fill" && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-xl"
+          style={{ background: "white", border: "2px solid #E5E7EB", width: "fit-content" }}
+        >
+          <span className="text-xs font-bold" style={{ color: "#9CA3AF" }}>
+            {tool === "brush" ? "붓 크기" : "지우개 크기"}
+          </span>
+          <input
+            type="range"
+            min={tool === "eraser" ? 10 : 4}
+            max={tool === "eraser" ? 50 : 30}
+            value={brushSize}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
+            style={{ width: 100, cursor: "pointer" }}
+          />
+          <div
+            className="rounded-full flex-shrink-0"
+            style={{
+              width: Math.min(brushSize * 0.7, 24),
+              height: Math.min(brushSize * 0.7, 24),
+              background: tool === "brush" ? color : "#D1D5DB",
+              border: "1.5px solid #E5E7EB",
+              transition: "width 0.1s, height 0.1s",
+            }}
+          />
+        </div>
+      )}
+
+      {/* ── 3-레이어 캔버스 영역 ── */}
+      <div
+        ref={containerRef}
+        className="relative rounded-2xl overflow-hidden"
+        style={{
+          border: "3px solid #E5E7EB",
+          cursor: tool === "fill" ? "crosshair" : "default",
+          background: "white",
+          isolation: "isolate",
+        }}
+        onClick={handleContainerClick}
+      >
+        {/* 높이 기준 이미지 (레이아웃용) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="" aria-hidden className="block w-full h-auto" style={{ visibility: "hidden" }} />
+
+        {/* z1: fill 캔버스 */}
+        <canvas ref={fillCanvasRef}
+          className="absolute inset-0 w-full h-full"
+          style={{ zIndex: 1, pointerEvents: "none" }}
+        />
+
+        {/* z2: brush 캔버스 */}
+        <canvas ref={brushCanvasRef}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            zIndex: 2,
+            touchAction: "none",
+            pointerEvents: tool !== "fill" ? "auto" : "none",
+            cursor: tool === "brush" ? "crosshair" : tool === "eraser" ? "cell" : "default",
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        />
+
+        {/* z3: 스케치 이미지 오버레이 (검은 선만 보임) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt="색칠 도안"
+          className="absolute inset-0 w-full h-full object-contain"
+          style={{ zIndex: 3, pointerEvents: "none", mixBlendMode: "multiply" }}
+        />
       </div>
+
 
       <p className="text-xs text-center text-gray-400">
         {tool === "fill"
@@ -472,7 +578,7 @@ export default function TemplateColoringStudio({
             : "🪣 선으로 둘러싸인 영역을 탭하면 색이 채워져요"
           : tool === "brush"
           ? "🖌️ 자유롭게 그려요 · 펜 압력 지원"
-          : "🧹 지우고 싶은 곳을 문질러요"}
+          : "지우고 싶은 곳을 문질러요"}
       </p>
     </div>
   );

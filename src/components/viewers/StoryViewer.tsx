@@ -85,13 +85,13 @@ function speakKoreanStory(text: string, opts: { gender?: "female" | "male"; onDo
     synth.speak(utter);
   }
 
-  // 이미 말하고 있으면 cancel 후 300ms 대기, idle이면 cancel 없이 바로 시작
+  // 이미 말하고 있으면 cancel 후 100ms 대기, idle이면 즉시 시작
   function start() {
     if (synth.speaking || synth.pending) {
       synth.cancel();
-      setTimeout(next, 300);
+      setTimeout(next, 100);
     } else {
-      setTimeout(next, 50);
+      next();
     }
   }
 
@@ -102,7 +102,7 @@ function speakKoreanStory(text: string, opts: { gender?: "female" | "male"; onDo
     let fired = false;
     const once = () => { if (!fired) { fired = true; start(); } };
     synth.addEventListener("voiceschanged", once, { once: true });
-    setTimeout(() => { if (!fired && synth.getVoices().length > 0) once(); }, 1000);
+    setTimeout(() => { if (!fired && synth.getVoices().length > 0) once(); }, 300);
   }
 
   return () => {

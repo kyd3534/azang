@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { speak as webSpeak, stopSpeaking as webStop, onSpeakingChange, type SpeakOptions } from "@/lib/tts";
+import { speak as webSpeak, stopSpeaking as webStop, onSpeakingChange, preloadVoices, type SpeakOptions } from "@/lib/tts";
 
 export interface VoiceProfile {
   id: string;
@@ -77,6 +77,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    preloadVoices(); // 앱 시작 시 음성 목록 미리 로드 → 첫 재생 지연 제거
     loadFromDb();
   }, []);
 
