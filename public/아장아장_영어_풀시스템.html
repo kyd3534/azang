@@ -1,0 +1,949 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);}
+.w{padding:1rem 0;}
+
+/* NAV */
+.top-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+.nb{padding:7px 15px;border-radius:999px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);cursor:pointer;font-size:12px;font-weight:500;color:var(--color-text-secondary);transition:all .15s;}
+.nb:hover{color:var(--color-text-primary);border-color:var(--color-border-secondary);}
+.nb.on{background:#E6F1FB;color:#185FA5;border-color:#85B7EB;}
+
+.age-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+.ab{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);cursor:pointer;font-size:12px;color:var(--color-text-secondary);}
+.ab.on{background:#E6F1FB;color:#185FA5;border-color:#85B7EB;font-weight:500;}
+
+.panel{display:none;flex-direction:column;gap:10px;}
+.panel.show{display:flex;}
+
+/* CARDS */
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;}
+.lbl{font-size:10px;font-weight:500;letter-spacing:.06em;color:var(--color-text-tertiary);text-transform:uppercase;margin-bottom:6px;}
+.title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;}
+.body{font-size:13px;line-height:1.75;color:var(--color-text-secondary);}
+
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;}
+
+.mc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.75rem 1rem;}
+.ml{font-size:10px;font-weight:500;color:var(--color-text-tertiary);margin-bottom:3px;}
+.mv{font-size:13px;color:var(--color-text-primary);line-height:1.6;}
+
+/* CODE */
+.code{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.875rem 1rem;margin-top:8px;border-left:3px solid #85B7EB;}
+.code.gold{border-color:#EF9F27;}
+.code.green{border-color:#5DCAA5;}
+.code.purple{border-color:#AFA9EC;}
+.cl{font-size:10px;font-weight:500;color:var(--color-text-tertiary);margin-bottom:5px;letter-spacing:.05em;}
+.ct{font-size:11px;line-height:1.85;color:var(--color-text-secondary);font-family:var(--font-mono);white-space:pre-wrap;}
+
+/* TAGS */
+.tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;font-weight:500;margin:2px;}
+.tb{background:#E6F1FB;color:#185FA5;}
+.tg{background:#E1F5EE;color:#0F6E56;}
+.ta{background:#FAEEDA;color:#854F0B;}
+.tp{background:#EEEDFE;color:#3C3489;}
+.tc{background:#FAECE7;color:#993C1D;}
+.tr{background:var(--color-background-secondary);color:var(--color-text-secondary);}
+
+/* FLOW */
+.flow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:8px;}
+.fb{padding:6px 10px;border-radius:var(--border-radius-md);font-size:11px;font-weight:500;text-align:center;}
+.fb-b{background:#E6F1FB;color:#185FA5;}
+.fb-g{background:#E1F5EE;color:#0F6E56;}
+.fb-a{background:#FAEEDA;color:#854F0B;}
+.fb-p{background:#EEEDFE;color:#3C3489;}
+.fb-c{background:#FAECE7;color:#993C1D;}
+.fb-gr{background:var(--color-background-secondary);color:var(--color-text-secondary);}
+.arr{font-size:12px;color:var(--color-text-tertiary);}
+
+/* GAME CARDS */
+.gc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.875rem;border:0.5px solid var(--color-border-tertiary);}
+.gi{font-size:22px;margin-bottom:5px;}
+.gn{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px;}
+.gd{font-size:11px;color:var(--color-text-secondary);line-height:1.55;}
+.gm{margin-top:6px;}
+.gbadge{font-size:10px;padding:2px 8px;border-radius:999px;background:#E6F1FB;color:#185FA5;font-weight:500;}
+
+/* STEP */
+.srow{display:flex;gap:10px;margin-bottom:10px;}
+.snum{width:22px;height:22px;border-radius:50%;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--color-text-secondary);margin-top:1px;}
+.sc{flex:1;}
+.st{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px;}
+.sd{font-size:12px;color:var(--color-text-secondary);line-height:1.65;}
+.sdiv{height:.5px;background:var(--color-border-tertiary);margin:6px 0;}
+
+.copy-btn{width:100%;margin-top:8px;padding:6px;font-size:12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;color:var(--color-text-secondary);}
+.copy-btn:hover{background:var(--color-background-secondary);}
+
+.badge-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+</style>
+
+<div class="w">
+<div class="top-nav" id="topNav">
+  <button class="nb on" data-p="prompt">프롬프트 고도화</button>
+  <button class="nb" data-p="game">게임·인터랙션</button>
+  <button class="nb" data-p="tts">TTS·이미지 파이프라인</button>
+  <button class="nb" data-p="ux">레슨 플로우 UX</button>
+</div>
+
+<!-- ════ P1: PROMPT ════ -->
+<div class="panel show" id="pp-prompt">
+  <div class="age-row" id="pAgeRow">
+    <button class="ab on" data-a="1">🍼 1-2세</button>
+    <button class="ab" data-a="3">🐥 3-4세</button>
+    <button class="ab" data-a="5">🐰 5-6세</button>
+    <button class="ab" data-a="7">🦊 7-8세</button>
+    <button class="ab" data-a="9">🦁 9-10세</button>
+  </div>
+  <div id="pContent"></div>
+</div>
+
+<!-- ════ P2: GAME ════ -->
+<div class="panel" id="pp-game">
+  <div class="age-row" id="gAgeRow">
+    <button class="ab on" data-ga="1">🍼 1-2세</button>
+    <button class="ab" data-ga="3">🐥 3-4세</button>
+    <button class="ab" data-ga="5">🐰 5-6세</button>
+    <button class="ab" data-ga="7">🦊 7-8세</button>
+    <button class="ab" data-ga="9">🦁 9-10세</button>
+  </div>
+  <div id="gContent"></div>
+</div>
+
+<!-- ════ P3: TTS ════ -->
+<div class="panel" id="pp-tts">
+  <div id="ttsContent"></div>
+</div>
+
+<!-- ════ P4: UX ════ -->
+<div class="panel" id="pp-ux">
+  <div class="age-row" id="uAgeRow">
+    <button class="ab on" data-ua="1">🍼 1-2세</button>
+    <button class="ab" data-ua="3">🐥 3-4세</button>
+    <button class="ab" data-ua="5">🐰 5-6세</button>
+    <button class="ab" data-ua="7">🦊 7-8세</button>
+    <button class="ab" data-ua="9">🦁 9-10세</button>
+  </div>
+  <div id="uContent"></div>
+</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   DATA — PROMPTS
+══════════════════════════════════════════ */
+const PROMPTS = {
+1:{
+  theory:"Pre-linguistic stage. Brain is wiring phoneme maps. Sound + image + emotion = memory. Repetition IS the lesson. No alphabet names yet — only sounds and rhythm.",
+  curriculum:["소리 인지 (Sound awareness)","운율 놀이 (Rhyme play)","일상 단어 소리 1-3개","TTS 반복 3회 이상"],
+  api:{model:"claude-sonnet-4-20250514",max_tokens:400,temperature:0.3},
+  prompt:`[SYSTEM — Ajang Ajang English / Age 1-2]
+Role: Warm caregiver introducing English sounds for the first time.
+Output: JSON ONLY. No preamble, no markdown fences.
+
+Schema:
+{
+  "lesson_type": "sound_image",
+  "theme": string,           // e.g. "animals", "food", "home"
+  "words": [                 // MAX 3 items
+    {
+      "word": string,        // simple CVC or single syllable
+      "tts_text": string,    // slow, warm, e.g. "dog~~ dog~~"
+      "ssml": string,        // full SSML tag
+      "image_query": string, // English keyword for image API
+      "rhyme_hint": string   // optional rhyme buddy: "dog, log, frog"
+    }
+  ],
+  "repeat_count": 3,
+  "bg_mood": "warm_pastel",
+  "parent_tip": string       // 10 words max tip for parent overlay
+}
+
+Rules:
+- words array MAX 3
+- No sentences ever
+- No alphabet letter names
+- No spelling
+- image_query must be English, photo-friendly
+- ssml: use rate="slow" pitch="+3st" always
+- rhyme_hint: include if easy rhyme exists
+- parent_tip: e.g. "Point to real objects as you play!"`,
+  ssml_example:`<speak>
+  <prosody rate="slow" pitch="+3st" volume="loud">
+    <emphasis level="strong">dog</emphasis>
+  </prosody>
+  <break time="700ms"/>
+  <prosody rate="slow" pitch="+2st">dog~~ dog~~</prosody>
+</speak>`
+},
+3:{
+  theory:"Language explosion phase. Vocabulary grows 5-10 words/day. Phonological awareness emerges — children can hear that 'cat' and 'hat' rhyme. Alphabet shape recognition begins. Play = learning.",
+  curriculum:["알파벳 대문자 인식","Letter-Sound 1:1 매핑","CVC 단어 패턴 (cat, dog, big)","단순 문장 1개 ('The cat is big.')","Sight word 1개/레슨"],
+  api:{model:"claude-sonnet-4-20250514",max_tokens:900,temperature:0.7},
+  prompt:`[SYSTEM — Ajang Ajang English / Age 3-4]
+Role: Playful phonics teacher. Children love repetition, rhyme, and being the hero.
+Output: JSON ONLY.
+
+Schema:
+{
+  "lesson_type": "alphabet_phonics",
+  "letter": {
+    "char": string,          // ONE uppercase letter e.g. "B"
+    "sound": string,         // IPA-ish: "/b/" 
+    "mnemonic": string,      // "B is for Ball! Buh-buh-Ball!"
+    "image_query": string,
+    "tts_intro": string,     // "B says /b/~ like Ball~ Ball~"
+    "mouth_tip": string      // "Press lips together, then pop!"
+  },
+  "sight_word": {
+    "word": string,          // Dolch pre-primer list
+    "tts": string,
+    "sentence": string       // 4-word max sentence using it
+  },
+  "words": [                 // 4 CVC words with the letter sound
+    {
+      "word": string,
+      "breakdown": {
+        "onset": string,     // "b"
+        "rime": string,      // "all"
+        "colors": ["blue","red","blue"]
+      },
+      "image_query": string,
+      "example_sentence": string  // 5 words max
+    }
+  ],
+  "story": {
+    "title": string,
+    "lines": [string],       // 3-4 lines ONLY
+    "repeat_phrase": string, // e.g. "B~ B~ Ball!"
+    "hero": string,          // child's name placeholder: "[NAME]"
+    "emotion_end": string    // last line: feeling word
+  },
+  "rhyme_set": [string]      // 3 rhyming words for the letter
+}
+
+Rules:
+- Only CVC words (consonant-vowel-consonant)
+- No silent letters, no blends (sh, ch, th)
+- story lines: 3-4 ONLY, simple subject-verb
+- sight_word from Dolch pre-primer: the, a, and, is, in, it, big, can, go, see`,
+  ssml_example:`<speak>
+  <prosody rate="medium" pitch="+1st">
+    B says <phoneme alphabet="ipa" ph="b">b</phoneme>~
+    <break time="300ms"/>
+    like <emphasis>Ball</emphasis>~ Ball~ Ball!
+    <break time="500ms"/>
+    Can you say it? B~ B~ Ball!
+  </prosody>
+</speak>`
+},
+5:{
+  theory:"Phonemic awareness peak. Can segment phonemes: /k/-/æ/-/t/ = cat. Ready for systematic phonics: short vowels → long vowels → blends → digraphs. Sight word bank: 50-100 words. Reading for meaning begins.",
+  curriculum:["단모음 5개 완성 (a,e,i,o,u)","자음 블렌드 입문 (st,bl,cr,dr)","이중자음 digraphs (sh,ch,th,wh)","Sight words 50개","음절 색깔 분해 (자음=파랑, 모음=빨강)","5-6줄 이야기 + 이해 질문 1개"],
+  api:{model:"claude-sonnet-4-20250514",max_tokens:1100,temperature:0.65},
+  prompt:`[SYSTEM — Ajang Ajang English / Age 5-6]
+Role: Systematic phonics teacher. Children can now blend sounds into words.
+Output: JSON ONLY.
+
+Schema:
+{
+  "lesson_type": "phonics_systematic",
+  "focus": {
+    "type": "short_vowel" | "blend" | "digraph",
+    "pattern": string,      // e.g. "short_a", "st_blend", "sh_digraph"
+    "example_word": string,
+    "rule_plain": string,   // child-friendly rule in 1 sentence
+    "color_decode": {
+      "word": string,
+      "parts": [
+        {"char": string, "role": "consonant"|"vowel"|"blend"|"digraph", "color": "blue"|"red"|"green"}
+      ],
+      "blend_guide": string // e.g. "sss-ttt-op → stop"
+    }
+  },
+  "sight_word": {
+    "word": string,         // Dolch primer/grade1 list
+    "cannot_decode": true,
+    "memory_tip": string    // visual trick e.g. "SAID has AI in the middle"
+  },
+  "words": [               // 5 words following the pattern
+    {
+      "word": string,
+      "syllable_count": number,
+      "color_parts": [{"char":string,"color":string}],
+      "image_query": string,
+      "example": string    // 6-8 words
+    }
+  ],
+  "minimal_pairs": [       // sound discrimination
+    {"word_a": string, "word_b": string, "difference": string}
+  ],
+  "story": {
+    "title": string,
+    "lines": [string],     // 5-6 lines
+    "pattern_word_count": number,  // how many times pattern appears
+    "comprehension_q": string
+  }
+}
+
+Rules:
+- minimal_pairs: 2 pairs showing today's pattern vs another
+- blend_guide: phoneme-by-phoneme then fast blend
+- story: pattern words appear minimum 4 times naturally
+- comprehension_q: literal, single-word or phrase answer OK`,
+  ssml_example:`<speak>
+  <prosody rate="medium">
+    Today's pattern: <break time="200ms"/>
+    <emphasis>short A</emphasis>.
+    <break time="400ms"/>
+    Listen: <break time="200ms"/>
+    <prosody rate="slow">c - a - t</prosody>
+    <break time="300ms"/>
+    Now fast: <emphasis>cat!</emphasis>
+    <break time="500ms"/>
+    Your turn~ c-a-t~
+  </prosody>
+</speak>`
+},
+7:{
+  theory:"Transitioning from 'learning to read' to 'reading to learn.' Phonics mostly complete. Now: fluency, vocabulary depth, and comprehension strategies (main idea, inference, context clues). Multi-syllable words. Prefixes/suffixes begin.",
+  curriculum:["다음절 단어 (yes-ter-day)","접두사 un-, re-, pre-, dis-","접미사 -ful, -less, -ness, -er","Context clues 전략","Sight words 220개 완성","8-10줄 지문 + 추론 질문"],
+  api:{model:"claude-sonnet-4-20250514",max_tokens:1500,temperature:0.7},
+  prompt:`[SYSTEM — Ajang Ajang English / Age 7-8]
+Role: Reading comprehension teacher. Build fluency + vocabulary + inferential thinking.
+Output: JSON ONLY.
+
+Schema:
+{
+  "lesson_type": "reading_fluency",
+  "word_study": {
+    "focus": "multi_syllable" | "prefix" | "suffix",
+    "target": string,          // e.g. "un-" or "yesterday"
+    "rule": string,            // "un- means NOT or OPPOSITE"
+    "examples": [              // 3 examples of the rule
+      {"word": string, "breakdown": string, "meaning": string}
+    ],
+    "stress_pattern": string   // e.g. "YES-ter-day (stress on 1st)"
+  },
+  "vocabulary": [             // 6 words
+    {
+      "word": string,
+      "syllables": string,     // "ad-ven-ture"
+      "pos": string,           // noun/verb/adj/adv
+      "definition": string,    // 10 words max, child-friendly
+      "context_clue_sentence": string,  // meaning hinted in sentence
+      "word_family": [string], // 2-3 related forms
+      "image_query": string
+    }
+  ],
+  "passage": {
+    "title": string,
+    "genre": "narrative" | "informational" | "procedural",
+    "line_count": 9,
+    "text": string,           // FULL 8-10 line passage. Include ALL 6 vocab words naturally.
+    "fluency_note": string    // reading tip e.g. "Pause at every comma"
+  },
+  "questions": [
+    {
+      "type": "literal",
+      "question": string,
+      "answer": string,
+      "text_location": string  // "paragraph 1" hint
+    },
+    {
+      "type": "inferential",
+      "question": string,
+      "thinking_prompt": string,  // "The text says X... so maybe..."
+      "sample_answer": string
+    }
+  ],
+  "activity": {
+    "type": "word_map",
+    "center_word": string,
+    "branches": ["definition","synonym","antonym","my_sentence"]
+  }
+}`,
+  ssml_example:`<speak>
+  <prosody rate="normal" pitch="0st">
+    Let's read together.
+    <break time="400ms"/>
+    <prosody rate="slow">
+      [passage line 1]
+    </prosody>
+    <break time="300ms"/>
+    Did you notice the word <emphasis>adventure</emphasis>?
+    <break time="300ms"/>
+    Adventure means an exciting experience.
+  </prosody>
+</speak>`
+},
+9:{
+  theory:"Academic language acquisition. Tier 2 vocabulary (analyze, describe, compare) is now critical for school success. Genre awareness: narrative vs. informational vs. persuasive. Critical thinking and opinion writing begin. Etymology helps retention.",
+  curriculum:["Tier 2 학술 어휘 (analyze, evidence, conclude)","접두사·접미사 완성","어원(etymology) 힌트","3개 장르 읽기 (narrative/informational/persuasive)","12-15줄 지문","비판적 사고 질문 (3번째 질문)","Fill-in-blank 어휘 활동"],
+  api:{model:"claude-sonnet-4-20250514",max_tokens:2000,temperature:0.72},
+  prompt:`[SYSTEM — Ajang Ajang English / Age 9-10]
+Role: Academic literacy teacher. Build content-area vocabulary and critical reading.
+Output: JSON ONLY.
+
+Schema:
+{
+  "lesson_type": "academic_literacy",
+  "theme": string,            // e.g. "Ocean Ecosystems", "Ancient Civilizations"
+  "vocabulary": [            // 8 words: 4 general + 4 academic/domain
+    {
+      "word": string,
+      "tier": 1|2|3,          // 1=everyday, 2=academic, 3=domain-specific
+      "etymology": string,    // "Latin: ecosystema = eco(house) + systema(arrangement)"
+      "definition": string,
+      "pos": string,
+      "example_1": string,    // general context
+      "example_2": string,    // academic context
+      "word_family": [string],
+      "collocations": [string]  // e.g. ["complex ecosystem","marine ecosystem"]
+    }
+  ],
+  "passage": {
+    "title": string,
+    "genre": "informational" | "narrative" | "persuasive",
+    "text_structure": "cause_effect"|"compare_contrast"|"problem_solution"|"chronological",
+    "line_count": 14,
+    "text": string,            // FULL 13-15 line passage. All 8 vocab words used naturally.
+    "text_features": {
+      "topic_sentence": string,
+      "thesis_or_claim": string,
+      "key_evidence": [string]
+    }
+  },
+  "questions": [
+    {
+      "type": "literal",
+      "question": string,
+      "answer": string
+    },
+    {
+      "type": "inferential",
+      "question": string,
+      "evidence_prompt": string,
+      "sample_answer": string
+    },
+    {
+      "type": "critical",
+      "question": string,
+      "sentence_starters": ["I agree because...","I disagree because...","The evidence shows..."],
+      "ai_feedback_rubric": {
+        "3pts": "Clear opinion + 2 evidence + personal connection",
+        "2pts": "Opinion + 1 evidence",
+        "1pt": "Opinion only"
+      }
+    }
+  ],
+  "fill_in_blank": [string],  // 2 sentences with ___ for vocab practice
+  "extension": {
+    "type": "research_prompt",
+    "prompt": string,          // 1 question to explore further
+    "search_safe": true
+  }
+}`,
+  ssml_example:`<speak>
+  <prosody rate="normal">
+    Today's passage genre is <emphasis>informational</emphasis>.
+    <break time="300ms"/>
+    As you read, look for the <emphasis>main idea</emphasis>
+    and <emphasis>supporting details</emphasis>.
+    <break time="500ms"/>
+    Ready? Let's begin.
+    <break time="400ms"/>
+    <prosody rate="slightly slow">
+      [passage text here]
+    </prosody>
+  </prosody>
+</speak>`
+}
+};
+
+/* ══════════════════════════════════════════
+   DATA — GAMES
+══════════════════════════════════════════ */
+const GAMES = {
+1:[
+  {icon:"🔊",name:"Sound Safari",badge:"터치 반응",
+   desc:"화면에 동물/사물 이미지 등장. 터치하면 TTS 재생. 3회 반복 후 자동 다음 단어. 실패 없음.",
+   mechanic:"tap_to_hear",
+   ai_hook:"AI가 오늘 theme에 맞는 image_query 3개 반환 → 이미지 자동 로드",
+   tech:"Supabase asset_pool에서 pre-cached 이미지 로드. TTS는 SSML rate=slow."},
+  {icon:"🎵",name:"Echo Echo",badge:"따라하기",
+   desc:"TTS가 단어 재생 → 0.8초 후 마이크 아이콘 활성화 → 아이가 말하면 파형 시각화. 시도만 해도 칭찬.",
+   mechanic:"listen_and_repeat",
+   ai_hook:"없음 — TTS만. 마이크 감지는 Web Audio API.",
+   tech:"navigator.mediaDevices.getUserMedia → AudioContext → AnalyserNode로 파형 표시."},
+  {icon:"🌈",name:"Rainbow Tap",badge:"색상 연결",
+   desc:"색깔 단어(red, blue, yellow)와 색깔 원을 매칭. 1-2세용 3색 한정. 터치 시 파티클 효과.",
+   mechanic:"color_word_match",
+   ai_hook:"theme='colors' 시 AI가 3개 색깔 단어만 반환",
+   tech:"단순 touch event + CSS animation (no canvas)"},
+],
+3:[
+  {icon:"🔤",name:"Letter Land",badge:"알파벳 매칭",
+   desc:"대문자 카드를 드래그해서 같은 소리의 이미지 위에 놓기. B → Ball 이미지. 맞으면 폭죽.",
+   mechanic:"drag_and_match",
+   ai_hook:"AI가 letter + image_query 반환 → 오늘의 Letter Land 자동 생성",
+   tech:"CSS transform + pointer events. Snap zone: 40px radius."},
+  {icon:"🎤",name:"Say It Loud",badge:"발음 연습",
+   desc:"입 모양 애니메이션 보여주고 → 아이가 따라 말하기 → 파형으로 '시도 확인'. 점수 없음.",
+   mechanic:"mouth_model_repeat",
+   ai_hook:"AI가 mouth_tip 반환 ('Press lips, then pop!')",
+   tech:"입 모양 SVG 애니메이션 + Web Audio 파형."},
+  {icon:"🃏",name:"Rhyme Rocket",badge:"라임 게임",
+   desc:"cat 카드 보여주고 → hat/bat/dog 중 라임 고르기. 정답 시 로켓 발사 애니메이션.",
+   mechanic:"rhyme_choice",
+   ai_hook:"AI가 rhyme_set 3개 + 오답 1개 반환",
+   tech:"4지 선다 버튼 UI. 오답 시 흔들기 애니메이션."},
+  {icon:"🧩",name:"Word Builder",badge:"단어 조립",
+   desc:"'c', 'a', 't' 타일을 순서대로 터치해서 단어 완성. 맞으면 이미지+TTS 자동 재생.",
+   mechanic:"phoneme_sequence_tap",
+   ai_hook:"AI의 breakdown.onset + rime으로 타일 자동 생성",
+   tech:"타일 배열 shuffle → tap sequence 검증."},
+],
+5:[
+  {icon:"🎨",name:"Sound Painter",badge:"음소 색칠",
+   desc:"단어가 빈 칸으로 등장. 자음 글자를 파란 페인트로, 모음을 빨간 페인트로 터치해서 색칠. 받침/블렌드는 초록.",
+   mechanic:"phoneme_color_paint",
+   ai_hook:"AI의 color_parts 배열로 정답 생성. 예: [{char:'s',color:'blue'},{char:'a',color:'red'}]",
+   tech:"글자별 터치 zone + 색상 상태 관리. 완성 시 flash 효과."},
+  {icon:"🔬",name:"Sound Lab",badge:"최소 대립쌍",
+   desc:"'cat' vs 'cut' — 어느 쪽이 들렸는지 고르기. AI 생성 minimal_pairs 활용. 귀 훈련.",
+   mechanic:"minimal_pair_discrimination",
+   ai_hook:"AI의 minimal_pairs 배열 활용",
+   tech:"두 버튼 + TTS 재생. 오답 시 해당 모음 빨간 하이라이트."},
+  {icon:"📚",name:"Story Spotter",badge:"단어 찾기",
+   desc:"지문을 읽으며 오늘의 pattern 단어를 터치. 모두 찾으면 별 3개. 놓친 단어는 흔들기로 힌트.",
+   mechanic:"pattern_word_hunt",
+   ai_hook:"AI의 story.text에서 pattern 단어 위치 좌표 추출",
+   tech:"텍스트 파싱 → 단어별 span + touch event."},
+  {icon:"🗣",name:"Fluency Racer",badge:"읽기 속도",
+   desc:"지문을 소리 내어 읽으면 타이머 측정. 분당 단어 수(WPM) 계산. 지난 기록과 비교 그래프.",
+   mechanic:"oral_reading_fluency",
+   ai_hook:"없음 — 지문 길이 / 경과 시간으로 WPM 계산",
+   tech:"타이머 + 단어 수 카운트. WPM = (words/seconds)*60."},
+],
+7:[
+  {icon:"🗺",name:"Story Map",badge:"구조 파악",
+   desc:"이야기 읽은 후 '등장인물 / 배경 / 사건 / 결말' 4칸 맵을 드래그로 완성. 구조적 이해 훈련.",
+   mechanic:"story_element_sort",
+   ai_hook:"AI의 passage.text에서 4요소 정답 추출",
+   tech:"4칸 드롭 존 + 이동 가능 카드."},
+  {icon:"💡",name:"Context Detective",badge:"문맥 추론",
+   desc:"지문에서 모르는 단어 터치 → 주변 문장 하이라이트 → '이 단어 뜻은?' 4지선다. 사전 없이 추론.",
+   mechanic:"context_clue_inference",
+   ai_hook:"AI의 context_clue_sentence 활용",
+   tech:"단어 터치 → 前後 1문장 yellow 하이라이트 + 선택지 팝업."},
+  {icon:"🧠",name:"Inference Engine",badge:"추론 퀴즈",
+   desc:"'The text says X. What does this SUGGEST?' 추론 질문. 단답 입력 → AI 피드백.",
+   mechanic:"inferential_qa_with_ai",
+   ai_hook:"AI의 questions[1].thinking_prompt 표시 후 Claude API로 답변 채점",
+   tech:"textarea + Claude API /v1/messages 호출. Rubric 기반 피드백."},
+  {icon:"📊",name:"Word Web",badge:"어휘 맵",
+   desc:"단어 카드를 중심에 놓고 → 유의어/반의어/예문/그림 4방향으로 드래그 확장. 마인드맵.",
+   mechanic:"vocabulary_map_build",
+   ai_hook:"AI의 activity.branches로 노드 자동 생성",
+   tech:"SVG 노드 연결 + 드래그 인터랙션."},
+],
+9:[
+  {icon:"⚖",name:"Evidence Court",badge:"비판적 사고",
+   desc:"주장 카드를 보고 '동의 / 비동의' 선택 → 지문에서 근거 문장 터치 → 자유 서술 → Claude 피드백.",
+   mechanic:"claim_evidence_opinion",
+   ai_hook:"Claude API: questions[2].ai_feedback_rubric으로 3점 채점",
+   tech:"3단계 플로우 UI. Claude API 스트리밍 응답."},
+  {icon:"📖",name:"Genre Detector",badge:"장르 분류",
+   desc:"지문 일부를 읽고 'narrative / informational / persuasive' 판별. 근거 문장도 선택.",
+   mechanic:"genre_classification",
+   ai_hook:"AI의 passage.genre와 text_features 활용",
+   tech:"3버튼 + 문장 선택 UI."},
+  {icon:"🔍",name:"Etymology Explorer",badge:"어원 탐험",
+   desc:"단어 카드 터치 → 라틴/그리스 어원 애니메이션 → 같은 어원 단어 3개 연결 퍼즐.",
+   mechanic:"etymology_word_family",
+   ai_hook:"AI의 vocabulary[].etymology + word_family 활용",
+   tech:"어원 트리 SVG 애니메이션."},
+  {icon:"✍",name:"Fill The Gap",badge:"어휘 활용",
+   desc:"AI 생성 fill_in_blank 문장에 오늘 단어 드래그. 맞으면 전체 문장 TTS 재생.",
+   mechanic:"gap_fill_drag",
+   ai_hook:"AI의 fill_in_blank 배열 직접 사용",
+   tech:"blank span + 단어 카드 드래그. snap + validate."},
+]
+};
+
+/* ══════════════════════════════════════════
+   DATA — UX FLOWS
+══════════════════════════════════════════ */
+const UX_FLOWS = {
+1:{dur:"5-7분",att:"30초~1분",rewards:"터치 횟수마다 별 1개 → 5개 = 오늘의 동물 스티커",
+  steps:[
+    {t:"오프닝 캐릭터 등장",d:"오늘의 theme 캐릭터(강아지, 고양이 등)가 bounce 애니메이션으로 등장. TTS: 'Hello! Today we meet... DOG!' 자동 재생."},
+    {t:"Word 1 — See & Hear",d:"풀스크린 이미지 + 큰 단어 텍스트. TTS 자동 재생 (SSML slow). 화면 중앙에 pulse 효과."},
+    {t:"Word 1 — Touch & Repeat",d:"이미지 터치 → TTS 재생 + 별 파티클. 무한 반복 가능. 3회 터치 후 'Next' 버튼 활성화."},
+    {t:"Word 2, 3 반복",d:"동일 패턴. 화면 전환은 부드러운 fade (0.3s)."},
+    {t:"오늘의 단어 퍼레이드",d:"3개 단어가 carousel로 자동 순환. TTS 자동. 아이가 보고 듣기만."},
+    {t:"칭찬 + 공유",d:"풀스크린 '⭐⭐⭐ Amazing!' + 오늘의 스티커 획득 애니메이션. 부모에게 공유 버튼."},
+  ],
+  ux_rules:["스크롤 없음 절대","버튼 최대 1개/화면","전환 fade 0.3s","오류 메시지 없음","부모 동반 가정"]},
+3:{dur:"8-10분",att:"1-2분",rewards:"Letter Badge 수집 (A-Z 26개 목표). 5개 모으면 First Reader 뱃지",
+  steps:[
+    {t:"Letter 등장 애니메이션 (30초)",d:"대문자가 화면에 stroke 애니메이션으로 그려짐. TTS: 'B! B says /b/~ like Ball!'"},
+    {t:"Mnemonic 연결",d:"기억 연상 이미지 등장. 'B is for Ball~ Buh-buh-Ball!' 반복 2회."},
+    {t:"Mouth Tip 표시",d:"입 모양 아이콘 + 'Press lips together, then POP!' 텍스트 + 시연 TTS."},
+    {t:"단어 카드 4장 (순서대로)",d:"한 장씩 등장. 이미지 → 단어 → TTS → 색상 분해. 터치로 반복."},
+    {t:"Rhyme Rocket 게임",d:"AI 생성 rhyme_set 활용. 라임 맞추기 3문제. 실패 시 재도전 무한."},
+    {t:"이야기 듣기",d:"3-4줄 story TTS 재생. 이미지 슬라이드 동기화. repeat_phrase에서 아이 따라 말하기 유도."},
+    {t:"Sight Word 플래시",d:"오늘의 sight word 3초 표시 → 가리기 → '기억해?' 버튼. 정답 여부 무관 칭찬."},
+    {t:"클로징",d:"Letter Badge 획득 애니메이션. 다음 레슨 예고: 'Next time: C for Cat!'"},
+  ],
+  ux_rules:["획순 애니메이션 필수","게임 실패 무한 재도전","시간제한 없음","사운드 ON/OFF 토글"]},
+5:{dur:"12-15분",att:"2-3분",rewards:"Sound Master 뱃지 (단모음 5개 완성). Blend Champion 뱃지. WPM 그래프",
+  steps:[
+    {t:"복습 Flash (2분)",d:"지난 레슨 sight words 5개 + phonics pattern 빠른 퀴즈. 3초/문제. 정답률 표시."},
+    {t:"오늘의 Phonics 소개 (1분)",d:"color_decode 애니메이션. 's-t-o-p → stop'. 천천히 → 빠르게 2회."},
+    {t:"Minimal Pairs 훈련 (2분)",d:"Sound Lab 게임. 'cat vs cut' 2쌍. 귀 훈련 집중."},
+    {t:"단어 5개 학습",d:"Sound Painter 활동. 각 단어 터치하면 색칠 완성 + TTS + 예문."},
+    {t:"이야기 독립 읽기",d:"5-6줄 story 표시. TTS 보조 버튼 우측 하단. Story Spotter 게임 병행."},
+    {t:"이해 질문 1개",d:"comprehension_q 객관식 4지선다. 오답 시 관련 줄 yellow 하이라이트."},
+    {t:"Fluency Racer",d:"같은 지문 다시 읽기. WPM 측정. 지난 기록 그래프."},
+    {t:"클로징 + 진척도",d:"Phonics Map 업데이트. 완성된 패턴 초록 체크. 다음 패턴 예고."},
+  ],
+  ux_rules:["독립 읽기 우선 (TTS는 보조)","WPM 기록 저장 → Supabase","Phonics Map 진척도 시각화","약점 패턴 자동 추적"]},
+7:{dur:"15-18분",att:"3-5분",rewards:"Independent Reader 뱃지. 7일 연속 트로피. 주간 WPM 그래프",
+  steps:[
+    {t:"어휘 복습 (2분)",d:"지난 5레슨 단어 10개 flash. 틀린 단어만 오늘 재등장 (Spaced Repetition 큐)."},
+    {t:"Word Study 소개 (1분)",d:"오늘의 prefix/suffix/multi-syllable. 예시 3개 quick animation."},
+    {t:"어휘 6개 심화",d:"단어카드 + 음절분해 + pos + 예문 + word_family. Context Detective 게임 연계."},
+    {t:"지문 독립 읽기",d:"8-10줄 passage. 하이라이트 기능. 모르는 단어 터치 → context clue 힌트."},
+    {t:"이해 질문 2개",d:"Literal (객관식) → Inferential (단답+AI 피드백). 추론 질문에 thinking_prompt 표시."},
+    {t:"Word Web 완성",d:"activity.branches로 어휘 맵 만들기. 완성 시 Supabase 저장."},
+    {t:"WPM + 정답률 리포트",d:"오늘 성과. 약점 어휘 3개 표시. 다음 레슨 예고."},
+  ],
+  ux_rules:["하이라이트/메모 기능 필수","오답 Spaced Repetition 큐에 추가","읽기시간 측정 → 부모 리포트","Claude API: 추론 질문 피드백"]},
+9:{dur:"20-25분",att:"5-10분",rewards:"Academic Scholar 뱃지. 포인트 100 → 새 주제 잠금 해제. 월간 왕관 → 상장 PDF",
+  steps:[
+    {t:"주간 어휘 리뷰 (3분)",d:"지난 5일 단어 40개 중 10개 랜덤. 틀린 단어 자동 오늘 레슨 포함. Spaced Rep 완전 자동화."},
+    {t:"주제 배경지식 (1분)",d:"오늘 theme 관련 이미지 3장 슬라이드. TTS 배경 설명 30초."},
+    {t:"어휘 8개 심화 (4분)",d:"Etymology Explorer 게임 연계. 어원 스토리 → word_family 연결 퍼즐."},
+    {t:"지문 독립 읽기 (5분)",d:"13-15줄. text_structure 표시 (Cause-Effect / Compare 등). 하이라이트 + 메모."},
+    {t:"이해 질문 3개 (5분)",d:"Literal → Inferential → Critical (Evidence Court). 비판 질문은 Claude API 피드백."},
+    {t:"Fill the Gap 게임 (2분)",d:"fill_in_blank 2문장. 정답 시 전체 문장 TTS + 어휘 강조."},
+    {t:"확장 탐구 제안 (1분)",d:"extension.prompt 표시. '더 알아보기' 버튼 → 안전 검색 또는 다음 레슨 주제 연결."},
+    {t:"포인트 + 리워드 (1분)",d:"오늘 포인트 획득. 누적 그래프. 잠금 해제 가능하면 팡파레."},
+  ],
+  ux_rules:["Claude API 스트리밍으로 비판 질문 피드백","학부모 주간 PDF 리포트 자동 생성","Spaced Rep DB: 단어별 다음 출제일 계산","extension.prompt는 외부 링크 없이 앱 내 처리"]}
+};
+
+/* ══════════════════════════════════════════
+   RENDER — TTS (static)
+══════════════════════════════════════════ */
+function renderTTS(){
+  document.getElementById('ttsContent').innerHTML=`
+    <div class="card">
+      <div class="lbl">TTS 엔진 선택 전략 — 영어 우선</div>
+      <div class="g2">
+        <div class="mc"><div class="ml">1차 추천 — 영어 발음</div><div class="mv" style="font-size:12px;">Google Neural2<br>en-US-Neural2-A (여성, 따뜻)<br>en-US-Neural2-D (남성, 안정)<br>en-US-Neural2-J (청소년 톤)</div><div class="badge-row"><span class="tag tg">발음 정확도 최고</span><span class="tag tb">SSML 완전 지원</span></div></div>
+        <div class="mc"><div class="ml">영어 발음 교정 전용</div><div class="mv" style="font-size:12px;">ElevenLabs<br>en 전용 감정 표현 최강<br>phonics 강조 읽기 탁월<br>한국어 품질은 Google 열위</div><div class="badge-row"><span class="tag tp">7-10세 발음 교정</span><span class="tag ta">비용 높음</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">연령별 SSML 파라미터 설계</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="mc">
+          <div class="ml">🍼 1-2세 — 과장되게 느리고 높게</div>
+          <div class="code" style="margin-top:6px;"><div class="cl">SSML</div><div class="ct">&lt;prosody rate="slow" pitch="+4st" volume="loud"&gt;
+  &lt;emphasis level="strong"&gt;dog&lt;/emphasis&gt;
+&lt;/prosody&gt;
+&lt;break time="800ms"/&gt;
+&lt;prosody rate="x-slow" pitch="+3st"&gt;dog~~ dog~~&lt;/prosody&gt;</div></div>
+        </div>
+        <div class="mc">
+          <div class="ml">🐥 3-4세 — 노래처럼 생동감</div>
+          <div class="code" style="margin-top:6px;"><div class="cl">SSML</div><div class="ct">&lt;prosody rate="medium" pitch="+2st"&gt;
+  B says &lt;phoneme alphabet="ipa" ph="b"&gt;b&lt;/phoneme&gt;~
+  &lt;break time="300ms"/&gt;
+  like &lt;emphasis&gt;Ball&lt;/emphasis&gt;~ Ball~ Ball!
+&lt;/prosody&gt;</div></div>
+        </div>
+        <div class="mc">
+          <div class="ml">🐰 5-6세 — 명확하게 분절</div>
+          <div class="code" style="margin-top:6px;"><div class="cl">SSML</div><div class="ct">&lt;prosody rate="medium"&gt;
+  &lt;prosody rate="slow"&gt;s - t - o - p&lt;/prosody&gt;
+  &lt;break time="400ms"/&gt;
+  Now fast: &lt;emphasis&gt;stop!&lt;/emphasis&gt;
+  &lt;break time="500ms"/&gt;
+  Your turn~ s-t-o-p~
+&lt;/prosody&gt;</div></div>
+        </div>
+        <div class="mc">
+          <div class="ml">🦊🦁 7-10세 — 자연스럽게 + 강조</div>
+          <div class="code" style="margin-top:6px;"><div class="cl">SSML</div><div class="ct">&lt;prosody rate="normal"&gt;
+  The word &lt;emphasis level="moderate"&gt;adventure&lt;/emphasis&gt;
+  means an exciting experience.
+  &lt;break time="300ms"/&gt;
+  Listen in context:
+  &lt;break time="200ms"/&gt;
+  &lt;prosody rate="slightly slow"&gt;[passage sentence]&lt;/prosody&gt;
+&lt;/prosody&gt;</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">이미지 파이프라인 — Supabase 캐시 아키텍처</div>
+      <div class="flow">
+        <div class="fb fb-p">Claude API<br>image_query 반환</div>
+        <div class="arr">→</div>
+        <div class="fb fb-b">asset_pool<br>테이블 조회</div>
+        <div class="arr">→</div>
+        <div class="fb fb-g">캐시 히트?</div>
+        <div class="arr">→ Yes</div>
+        <div class="fb fb-g">CDN URL<br>즉시 반환</div>
+      </div>
+      <div class="flow" style="margin-top:6px;">
+        <div class="fb fb-gr" style="visibility:hidden;">placeholder</div>
+        <div class="arr" style="visibility:hidden;">→</div>
+        <div class="fb fb-gr" style="visibility:hidden;">placeholder</div>
+        <div class="arr">→ No</div>
+        <div class="fb fb-a">Unsplash API<br>or DALL-E</div>
+        <div class="arr">→</div>
+        <div class="fb fb-p">Supabase<br>Storage 저장</div>
+        <div class="arr">→</div>
+        <div class="fb fb-g">CDN URL 캐시</div>
+      </div>
+      <div class="code" style="margin-top:10px;"><div class="cl">EDGE FUNCTION — image_cache.ts</div><div class="ct">export async function getOrCreateImage(
+  query: string,
+  age_group: string,
+  subject: string = 'english'
+) {
+  // 1. 캐시 확인
+  const { data: cached } = await supabase
+    .from('asset_pool')
+    .select('cdn_url, width, height')
+    .eq('image_query', query)
+    .eq('age_group', age_group)
+    .eq('subject', subject)
+    .single();
+
+  if (cached) return cached; // 캐시 히트 → 즉시 반환
+
+  // 2. 생성 (age 1-6: Unsplash, age 7-10: DALL-E)
+  const url = parseInt(age_group) <= 6
+    ? await fetchUnsplash(query)     // 실사 이미지
+    : await generateDALLE(query);    // 삽화 스타일
+
+  // 3. Storage 저장 + asset_pool 등록
+  const { publicUrl } = await supabase.storage
+    .from('lesson-assets')
+    .upload(\`\${subject}/\${age_group}/\${query}.jpg\`, imageBlob);
+
+  await supabase.from('asset_pool').insert({
+    image_query: query,
+    age_group, subject,
+    cdn_url: publicUrl,
+    created_at: new Date()
+  });
+
+  return { cdn_url: publicUrl };
+}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">TTS 캐시 — 비용 최적화</div>
+      <div class="code green"><div class="cl">TTS CACHE STRATEGY</div><div class="ct">// TTS도 동일하게 캐시
+// 같은 text + age_group → 재생성 없이 재사용
+// 예상 절감: API 비용 75-85%↓
+
+async function getOrCreateTTS(
+  text: string,
+  ssml: string,
+  age_group: string
+) {
+  const cacheKey = btoa(ssml + age_group); // base64 해시
+
+  const { data: cached } = await supabase
+    .from('tts_pool')
+    .select('audio_url')
+    .eq('cache_key', cacheKey)
+    .single();
+
+  if (cached) return cached.audio_url;
+
+  // Google Neural2 TTS 생성
+  const audio = await googleTTS({
+    input: { ssml },
+    voice: { languageCode: 'en-US', name: getVoice(age_group) },
+    audioConfig: { audioEncoding: 'MP3' }
+  });
+
+  const audioUrl = await uploadToSupabase(audio, cacheKey);
+  await supabase.from('tts_pool').insert({ cache_key: cacheKey, audio_url: audioUrl, age_group });
+
+  return audioUrl;
+}
+
+function getVoice(age: string) {
+  const n = parseInt(age);
+  if (n <= 2) return 'en-US-Neural2-J'; // 밝고 높은 톤
+  if (n <= 6) return 'en-US-Neural2-A'; // 따뜻한 여성
+  return 'en-US-Neural2-D';             // 안정적 성인
+}</div></div>
+    </div>
+  `;
+}
+
+/* ══════════════════════════════════════════
+   RENDER — PROMPT
+══════════════════════════════════════════ */
+let curAge=1, curGAge=1, curUAge=1;
+
+function renderPrompt(){
+  const d=PROMPTS[curAge];
+  document.getElementById('pContent').innerHTML=`
+    <div class="card">
+      <div class="lbl">발달 이론 (Developmental Theory)</div>
+      <div class="body">${d.theory}</div>
+      <div class="badge-row" style="margin-top:8px;">${d.curriculum.map(c=>`<span class="tag tb">${c}</span>`).join('')}</div>
+    </div>
+    <div class="g2">
+      <div class="mc"><div class="ml">Model</div><div class="mv" style="font-size:12px;">${d.api.model}</div></div>
+      <div class="mc"><div class="ml">max_tokens</div><div class="mv">${d.api.max_tokens}</div></div>
+      <div class="mc"><div class="ml">temperature</div><div class="mv">${d.api.temperature}</div></div>
+    </div>
+    <div class="card">
+      <div class="lbl">시스템 프롬프트 — JSON 강제 모드</div>
+      <div class="code"><div class="cl">SYSTEM PROMPT</div><div class="ct" id="promptTxt">${d.prompt}</div></div>
+      <button class="copy-btn" onclick="doCopy()">프롬프트 복사 ↗</button>
+    </div>
+    <div class="card">
+      <div class="lbl">SSML 예시 — ${curAge}-${curAge+1}세</div>
+      <div class="code gold"><div class="cl">SSML EXAMPLE</div><div class="ct">${d.ssml_example}</div></div>
+    </div>
+  `;
+}
+
+function renderGame(){
+  const games=GAMES[curGAge];
+  const hookLines={
+    1:"게임 → AI 연동 없음. TTS + 이미지 캐시만. 실패 개념 없음.",
+    3:"AI의 letter + rhyme_set + breakdown으로 게임 데이터 자동 생성.",
+    5:"AI의 color_parts + minimal_pairs + story.text로 3개 게임 동시 구동.",
+    7:"Claude API 직접 연동: 추론 질문 답변 채점 + Word Web 노드 생성.",
+    9:"Claude API 스트리밍: 비판 질문 3점 루브릭 피드백 + Etymology 어원 트리."
+  };
+  document.getElementById('gContent').innerHTML=`
+    <div class="card">
+      <div class="lbl">AI ↔ 게임 연동 원칙 — ${curGAge}-${curGAge+1}세</div>
+      <div class="body">${hookLines[curGAge]}</div>
+    </div>
+    <div class="g4">
+      ${games.map(g=>`
+        <div class="gc">
+          <div class="gi">${g.icon}</div>
+          <div class="gn">${g.name}</div>
+          <div class="gm"><span class="gbadge">${g.badge}</span></div>
+          <div class="gd" style="margin-top:6px;">${g.desc}</div>
+          <div class="code" style="margin-top:8px;border-color:#AFA9EC;">
+            <div class="cl">AI HOOK</div>
+            <div class="ct">${g.ai_hook}</div>
+          </div>
+          <div class="code green" style="margin-top:4px;">
+            <div class="cl">TECH</div>
+            <div class="ct">${g.tech}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderUX(){
+  const u=UX_FLOWS[curUAge];
+  document.getElementById('uContent').innerHTML=`
+    <div class="g2">
+      <div class="mc"><div class="ml">총 레슨 시간</div><div class="mv">${u.dur}</div></div>
+      <div class="mc"><div class="ml">주의집중 단위</div><div class="mv">${u.att}</div></div>
+    </div>
+    <div class="card">
+      <div class="lbl">리워드 시스템</div>
+      <div class="body">${u.rewards}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">레슨 스텝 플로우 — ${curUAge}-${curUAge+1}세</div>
+      ${u.steps.map((s,i)=>`
+        <div class="srow">
+          <div class="snum">${i+1}</div>
+          <div class="sc">
+            <div class="st">${s.t}</div>
+            <div class="sd">${s.d}</div>
+          </div>
+        </div>
+        ${i<u.steps.length-1?'<div class="sdiv"></div>':''}
+      `).join('')}
+    </div>
+    <div class="card">
+      <div class="lbl">UX 설계 규칙</div>
+      <div class="badge-row">${u.ux_rules.map(r=>`<span class="tag tr">${r}</span>`).join('')}</div>
+    </div>
+  `;
+}
+
+function doCopy(){
+  const t=document.getElementById('promptTxt').textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.querySelector('.copy-btn');
+    b.textContent='복사 완료!';
+    setTimeout(()=>b.textContent='프롬프트 복사 ↗',1500);
+  });
+}
+
+/* ══════════════════════════════════════════
+   EVENTS
+══════════════════════════════════════════ */
+document.getElementById('topNav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-p]');
+  if(!b)return;
+  document.querySelectorAll('.nb').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));
+  document.getElementById('pp-'+b.dataset.p).classList.add('show');
+  if(b.dataset.p==='tts')renderTTS();
+  if(b.dataset.p==='game')renderGame();
+  if(b.dataset.p==='ux')renderUX();
+});
+
+document.getElementById('pAgeRow').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');
+  if(!b)return;
+  curAge=parseInt(b.dataset.a);
+  document.querySelectorAll('#pAgeRow .ab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  renderPrompt();
+});
+
+document.getElementById('gAgeRow').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ga]');
+  if(!b)return;
+  curGAge=parseInt(b.dataset.ga);
+  document.querySelectorAll('#gAgeRow .ab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  renderGame();
+});
+
+document.getElementById('uAgeRow').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ua]');
+  if(!b)return;
+  curUAge=parseInt(b.dataset.ua);
+  document.querySelectorAll('#uAgeRow .ab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  renderUX();
+});
+
+/* INIT */
+renderPrompt();
+</script>

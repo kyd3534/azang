@@ -1,35 +1,43 @@
-import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { NextRequest, NextResponse } from "next/server";
+import { getNasConfig } from "@/lib/nas-config-cache";
 import { webdavList } from "@/lib/synology";
 
 const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv|m4v)$/i;
 
-export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from("app_settings")
-    .select("key, value")
-    .in("key", ["nas_host", "nas_port", "nas_https", "nas_username", "nas_password", "nas_folder_path"]);
+/** 서버 메모리 내 폴더 목록 캐시 (경로별 30초 TTL) */
+const listingCache = new Map<string, { files: string[]; folders: string[]; ts: number }>();
+const LISTING_TTL = 30_000;
 
-  const config: Record<string, string> = {};
-  data?.forEach(({ key, value }) => { config[key] = value; });
+export async function GET(req: NextRequest) {
+  const subpath = req.nextUrl.searchParams.get("subpath") ?? "";
 
-  const { nas_host, nas_port, nas_https, nas_username, nas_password, nas_folder_path } = config;
-
-  if (!nas_host || !nas_username || !nas_password) {
-    return NextResponse.json({ files: [], error: "NAS 설정이 필요해요" });
+  const config = await getNasConfig();
+  if (!config) {
+    return NextResponse.json({ files: [], folders: [], error: "NAS 설정이 필요해요" });
   }
 
-  const protocol = nas_https === "false" ? "http" : "https";
-  const port = nas_port ?? "7777";
-  const baseUrl = `${protocol}://${nas_host}:${port}`;
-  const folderPath = nas_folder_path ?? "/video/kids";
+  // 캐시 히트
+  const cached = listingCache.get(subpath);
+  if (cached && Date.now() - cached.ts < LISTING_TTL) {
+    return NextResponse.json(
+      { files: cached.files, folders: cached.folders },
+      { headers: { "X-Cache": "HIT" } }
+    );
+  }
+
+  const browsePath = subpath
+    ? `${config.folderPath}/${subpath}`
+    : config.folderPath;
 
   try {
-    const entries = await webdavList(baseUrl, nas_username, nas_password, folderPath);
+    const entries = await webdavList(config.baseUrl, config.username, config.password, browsePath);
+    const folders = entries.filter(f => f.isdir).map(f => f.name);
     const files = entries.filter(f => !f.isdir && VIDEO_EXT.test(f.name)).map(f => f.name);
-    return NextResponse.json({ files });
+
+    listingCache.set(subpath, { files, folders, ts: Date.now() });
+
+    return NextResponse.json({ files, folders });
   } catch (err) {
-    return NextResponse.json({ files: [], error: String(err) });
+    return NextResponse.json({ files: [], folders: [], error: String(err) });
   }
 }

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 
 interface ContentItem {
   id: string;
@@ -21,23 +20,26 @@ interface ContentListProps {
 }
 
 export default function ContentList({ items, table, viewPath, emptyText, onPractice }: ContentListProps) {
-  const router = useRouter();
+  const [localItems, setLocalItems] = useState(items);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  if (typeof window !== "undefined" && !isMounted) {
-    setIsMounted(true);
-  }
+  useEffect(() => { setIsMounted(true); }, []);
 
   async function handleDelete(id: string) {
     setDeleting(id);
+    // 즉시 UI에서 제거 (낙관적 업데이트)
+    setLocalItems((prev) => prev.filter((item) => item.id !== id));
     const supabase = createClient();
-    await supabase.from(table).delete().eq("id", id);
-    router.refresh();
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if (error) {
+      // 실패 시 복원
+      setLocalItems(items);
+    }
     setDeleting(null);
   }
 
-  if (items.length === 0) {
+  if (localItems.length === 0) {
     return (
       <div className="text-center py-16">
         <p className="text-5xl mb-4 animate-bounce">🌱</p>
@@ -48,7 +50,7 @@ export default function ContentList({ items, table, viewPath, emptyText, onPract
 
   return (
     <div className="space-y-3">
-      {items.map((item) => (
+      {localItems.map((item) => (
         <div
           key={item.id}
           className="rounded-2xl bg-white hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 p-4"

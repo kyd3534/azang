@@ -6,7 +6,7 @@ import { generateEnglishLesson } from "@/lib/ai-actions";
 import { createClient } from "@/lib/supabase";
 import PageHeader from "@/components/ui/page-header";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import ContentList from "@/components/layout/ContentList";
+import LessonCardGrid, { type CardMeta } from "@/components/layout/LessonCardGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,9 +32,33 @@ type Tab = "create" | "list" | "practice";
 
 type Lesson = { id: string; title: string; created_at: string; words: unknown };
 
+const ENGLISH_CARD_META: Array<{ keywords: string[]; emoji: string; gradient: string; badgeText: string; badgeColor: string }> = [
+  { keywords: ["동물", "animal", "강아지", "고양이", "토끼", "곰", "사자", "호랑이", "코끼리", "기린"], emoji: "🐾", gradient: "linear-gradient(135deg, #DBEAFE 0%, #C7D2FE 100%)", badgeText: "동물", badgeColor: "#3730A3" },
+  { keywords: ["과일", "fruit", "사과", "딸기", "바나나", "포도", "수박", "오렌지"], emoji: "🍎", gradient: "linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)", badgeText: "과일", badgeColor: "#991B1B" },
+  { keywords: ["채소", "야채", "vegetable", "당근", "브로콜리", "시금치"], emoji: "🥦", gradient: "linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)", badgeText: "채소", badgeColor: "#166534" },
+  { keywords: ["색깔", "색", "color", "colour", "빨강", "파랑", "노랑", "초록"], emoji: "🎨", gradient: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", badgeText: "색깔", badgeColor: "#92400E" },
+  { keywords: ["음식", "식사", "food", "밥", "빵", "케이크", "피자", "햄버거"], emoji: "🍔", gradient: "linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)", badgeText: "음식", badgeColor: "#9A3412" },
+  { keywords: ["학교", "school", "교실", "선생님", "공부", "수업", "친구"], emoji: "🏫", gradient: "linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)", badgeText: "학교", badgeColor: "#4338CA" },
+  { keywords: ["가족", "family", "엄마", "아빠", "언니", "오빠", "동생"], emoji: "👨‍👩‍👧", gradient: "linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)", badgeText: "가족", badgeColor: "#9D174D" },
+  { keywords: ["공원", "park", "놀이터", "그네", "미끄럼틀", "자전거"], emoji: "🌳", gradient: "linear-gradient(135deg, #DCFCE7 0%, #A7F3D0 100%)", badgeText: "공원", badgeColor: "#064E3B" },
+  { keywords: ["생일", "birthday", "파티", "party", "케이크", "선물"], emoji: "🎂", gradient: "linear-gradient(135deg, #FDF2F8 0%, #FBCFE8 100%)", badgeText: "생일", badgeColor: "#BE185D" },
+  { keywords: ["날씨", "weather", "비", "눈", "햇살", "구름", "바람"], emoji: "☀️", gradient: "linear-gradient(135deg, #FEF9C3 0%, #FEF08A 100%)", badgeText: "날씨", badgeColor: "#713F12" },
+];
+
+function getEnglishCardMeta(title: string): CardMeta {
+  const lower = title.toLowerCase();
+  for (const m of ENGLISH_CARD_META) {
+    if (m.keywords.some((k) => lower.includes(k))) {
+      return { emoji: m.emoji, gradient: m.gradient, badge: "white", badgeText: m.badgeText, badgeColor: m.badgeColor };
+    }
+  }
+  return { emoji: "⭐", gradient: "linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)", badge: "white", badgeText: "영어", badgeColor: "#4338CA" };
+}
+
 function extractWordsFromLesson(lesson: Lesson): PracticeWord[] {
   const result: PracticeWord[] = [];
   const content = lesson.words as EnglishOutput;
+
   if (content.contentType === "combined") {
     for (const w of (content as CombinedOutput).words) {
       result.push({ word: w.word, meaning: w.meaning, emoji: w.emoji, pronunciation: w.pronunciation });
@@ -46,6 +70,28 @@ function extractWordsFromLesson(lesson: Lesson): PracticeWord[] {
   } else if (content.contentType === "dialogue") {
     for (const v of content.vocabulary) {
       result.push({ word: v.word, meaning: v.meaning, emoji: "💬" });
+    }
+  } else if (content.contentType === "sound_image") {
+    for (const w of content.words) {
+      result.push({ word: w.word, meaning: "", emoji: w.emoji, pronunciation: w.word });
+    }
+  } else if (content.contentType === "alphabet_phonics") {
+    for (const w of content.words) {
+      result.push({ word: w.word, meaning: w.example_sentence, emoji: w.emoji, pronunciation: w.word });
+    }
+    result.push({ word: content.sight_word.word, meaning: content.sight_word.sentence, emoji: "👁", pronunciation: content.sight_word.word });
+  } else if (content.contentType === "phonics_systematic") {
+    for (const w of content.words) {
+      result.push({ word: w.word, meaning: w.example, emoji: w.emoji, pronunciation: w.word });
+    }
+    result.push({ word: content.sight_word.word, meaning: content.sight_word.memory_tip, emoji: "👁", pronunciation: content.sight_word.word });
+  } else if (content.contentType === "reading_fluency") {
+    for (const v of content.vocabulary) {
+      result.push({ word: v.word, meaning: v.definition, emoji: v.emoji, pronunciation: v.syllables });
+    }
+  } else if (content.contentType === "academic_literacy") {
+    for (const v of content.vocabulary) {
+      result.push({ word: v.word, meaning: v.definition, emoji: v.emoji, pronunciation: v.word });
     }
   }
   return result;
@@ -64,12 +110,12 @@ export default function EnglishPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
       supabase
         .from("english_lessons")
         .select("id, title, created_at, words")
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
         .then(({ data }) => setLessons(data ?? []));
     });
@@ -191,11 +237,12 @@ export default function EnglishPage() {
 
       {/* ── 목록 ── */}
       {tab === "list" && (
-        <ContentList
+        <LessonCardGrid
           items={lessons}
           table="english_lessons"
           viewPath="/dashboard/english"
           emptyText="아직 만든 영어 학습이 없어요! ⭐"
+          getCardMeta={getEnglishCardMeta}
           onPractice={handlePractice}
         />
       )}

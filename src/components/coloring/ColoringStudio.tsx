@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
-import { playFillSound, playBrushSound, playEraserSound } from "@/lib/coloring-sound";
+import { playFillSound, playBrushSound, stopBrushSound, playEraserSound } from "@/lib/coloring-sound";
 
 // ── 24 색상 팔레트 ─────────────────────────────────────────────────────────
 const PALETTE: readonly string[] = [
@@ -361,7 +361,12 @@ export default function ColoringStudio({
   }
 
   function handlePointerUp() {
-    if (isDrawing.current) { isDrawing.current = false; lastPos.current = null; scheduleSave(); }
+    if (isDrawing.current) {
+      isDrawing.current = false;
+      lastPos.current = null;
+      stopBrushSound();
+      scheduleSave();
+    }
   }
 
   // ── 되돌리기 ────────────────────────────────────────────────────────────
@@ -439,204 +444,187 @@ export default function ColoringStudio({
     }
   }
 
-  const TOOL_DEFS = [
-    { id: "fill"   as Tool, label: "채우기", Icon: FillIcon },
-    { id: "brush"  as Tool, label: "붓",     Icon: BrushIcon },
-    { id: "eraser" as Tool, label: "지우개",  Icon: EraserIcon },
+  const TOOL_DEFS: { id: Tool; label: string; Icon: React.FC<{ c?: string; s?: number }> }[] = [
+    { id: "fill",   label: "채우기", Icon: FillIcon },
+    { id: "brush",  label: "붓",     Icon: BrushIcon },
+    { id: "eraser", label: "지우개",  Icon: EraserIcon },
   ];
 
-  return (
-    <div className="flex flex-col gap-2 select-none">
-      {title && <h2 className="text-sm font-black text-gray-700">{title}</h2>}
+  const toolColor = (id: Tool) =>
+    id === "eraser" ? "#EF4444" : id === "fill" ? "#4F46E5" : "#A21CAF";
+  const toolBg = (id: Tool) =>
+    id === "eraser" ? "#FEF2F2" : id === "fill" ? "#EEF2FF" : "#FDF4FF";
+  const toolBorder = (id: Tool) =>
+    id === "eraser" ? "#FCA5A5" : id === "fill" ? "#A5B4FC" : "#E879F9";
 
-      {/* ── Row 1: 도구 세그먼트 + 액션 버튼 ── */}
-      <div className="flex items-center gap-2">
-        {/* 도구 아이콘 버튼 */}
-        <div className="flex items-center gap-2 flex-1">
+  return (
+    <div className="flex flex-col gap-2 select-none h-full">
+
+      {/* ── Row 1: 도구 + 색상 + 액션 ── */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* 도구 3개 */}
+        <div className="flex gap-1.5">
           {TOOL_DEFS.map(({ id, label, Icon }) => (
             <button
               key={id}
               onClick={() => setTool(id)}
-              className="flex flex-col items-center justify-center gap-1 rounded-2xl transition-all flex-1 py-2.5"
+              className="flex flex-col items-center justify-center gap-0.5 rounded-2xl transition-all px-3 py-2"
               style={{
-                background: tool === id ? (id === "eraser" ? "#FEF2F2" : id === "fill" ? "#EEF2FF" : "#FDF4FF") : "#F1F5F9",
-                border: tool === id
-                  ? `2.5px solid ${id === "eraser" ? "#FCA5A5" : id === "fill" ? "#A5B4FC" : "#E879F9"}`
-                  : "2.5px solid transparent",
-                boxShadow: tool === id ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
+                background: tool === id ? toolBg(id) : "#F1F5F9",
+                border: `2px solid ${tool === id ? toolBorder(id) : "transparent"}`,
+                boxShadow: tool === id ? "0 2px 8px rgba(0,0,0,0.10)" : "none",
+                minWidth: 56,
               }}
+              title={label}
             >
-              <Icon
-                c={tool === id ? (id === "eraser" ? "#EF4444" : id === "fill" ? "#4F46E5" : "#A21CAF") : "#9CA3AF"}
-                s={22}
-              />
-              <span className="text-[10px] font-bold" style={{ color: tool === id ? (id === "eraser" ? "#EF4444" : id === "fill" ? "#4F46E5" : "#A21CAF") : "#9CA3AF" }}>
+              <Icon c={tool === id ? toolColor(id) : "#9CA3AF"} s={20} />
+              <span className="text-[10px] font-bold leading-none mt-0.5"
+                style={{ color: tool === id ? toolColor(id) : "#9CA3AF" }}>
                 {label}
               </span>
             </button>
           ))}
         </div>
 
+        {/* 크기 슬라이더 (붓/지우개, 인라인) */}
+        {tool !== "fill" && (
+          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl flex-shrink-0"
+            style={{ background: "white", border: "2px solid #E5E7EB" }}>
+            <div className="rounded-full flex-shrink-0"
+              style={{
+                width: Math.min(Math.max(brushSize * 0.55, 8), 20),
+                height: Math.min(Math.max(brushSize * 0.55, 8), 20),
+                background: tool === "brush" ? color : "#D1D5DB",
+                border: "1.5px solid #E5E7EB",
+                transition: "all 0.1s",
+              }}
+            />
+            <input
+              type="range"
+              min={tool === "eraser" ? 10 : 4}
+              max={tool === "eraser" ? 50 : 30}
+              value={brushSize}
+              onChange={(e) => setBrushSize(Number(e.target.value))}
+              style={{ width: 72, cursor: "pointer" }}
+            />
+          </div>
+        )}
+
+        {/* 구분선 */}
+        <div style={{ width: 1, height: 32, background: "#E5E7EB", flexShrink: 0 }} />
+
+        {/* 현재 색 + 퀵 컬러 */}
+        <div className="flex items-center gap-1.5 flex-1 overflow-x-auto min-w-0">
+          <div className="rounded-full flex-shrink-0 cursor-pointer"
+            style={{ width: 26, height: 26, background: color, border: "3px solid white", boxShadow: "0 0 0 2.5px #6366F1" }}
+            title="현재 색상"
+          />
+          <div style={{ width: 1, height: 20, background: "#E5E7EB", flexShrink: 0 }} />
+          {QUICK_COLORS.map((c) => (
+            <button key={c} onClick={() => setColor(c)}
+              className="rounded-full flex-shrink-0 transition-transform"
+              style={{
+                width: 22, height: 22, background: c,
+                border: color === c ? "2.5px solid #4F46E5" : "2px solid #D1D5DB",
+                transform: color === c ? "scale(1.25)" : "scale(1)",
+              }}
+            />
+          ))}
+          <button onClick={() => setPaletteOpen((p) => !p)}
+            className="rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs"
+            style={{
+              width: 22, height: 22,
+              background: paletteOpen ? "#4F46E5" : "#F3F4F6",
+              color: paletteOpen ? "white" : "#6B7280",
+              border: "2px dashed #D1D5DB",
+            }}
+          >{paletteOpen ? "▲" : "＋"}</button>
+        </div>
+
+        {/* 구분선 */}
+        <div style={{ width: 1, height: 32, background: "#E5E7EB", flexShrink: 0 }} />
+
         {/* 액션 버튼 */}
         <div className="flex gap-1 flex-shrink-0">
-          <button
-            onClick={handleUndo} disabled={undoCount === 0}
-            className="w-9 h-9 rounded-xl font-bold flex items-center justify-center text-sm transition-colors"
-            style={{ background: "#EFF6FF", color: undoCount === 0 ? "#93C5FD" : "#3B82F6", border: "2px solid #BFDBFE" }}
-            title="실행취소"
-          >↩</button>
-          <button
-            onClick={handleClear}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm"
+          {/* 실행취소 */}
+          <button onClick={handleUndo} disabled={undoCount === 0}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+            style={{ background: "#EFF6FF", color: undoCount === 0 ? "#BFDBFE" : "#3B82F6", border: "2px solid #BFDBFE" }}
+            title="실행취소">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7v6h6"/><path d="M3 13C5 8.333 8.4 6 13 6c5 0 8 3.333 8 8s-3 8-8 8c-3 0-5.5-1-7-3"/>
+            </svg>
+          </button>
+          {/* 초기화 */}
+          <button onClick={handleClear}
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: "#FEF2F2", color: "#EF4444", border: "2px solid #FECACA" }}
-            title="초기화"
-          >🗑</button>
-          <button
-            onClick={handleSave}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm"
+            title="초기화">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+          {/* 저장 */}
+          <button onClick={handleSave}
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "white" }}
-            title="저장"
-          >💾</button>
+            title="이미지 저장">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* ── Row 2: 색상 선택 (항상 표시) ── */}
-      <div
-        className="flex items-center gap-1.5 rounded-2xl px-3 py-2"
-        style={{ background: "white", border: "2px solid #E5E7EB" }}
-      >
-        {/* 현재 선택 색 */}
-        <div
-          className="rounded-full flex-shrink-0"
-          style={{
-            width: 28, height: 28,
-            background: color,
-            border: "3px solid white",
-            boxShadow: "0 0 0 2px #6366F1",
-          }}
-        />
-        {/* 구분선 */}
-        <div style={{ width: 1, height: 22, background: "#E5E7EB", flexShrink: 0 }} />
-        {/* 퀵 색상 */}
-        {QUICK_COLORS.map((c) => (
-          <button
-            key={c}
-            onClick={() => setColor(c)}
-            className="rounded-full flex-shrink-0 transition-transform"
-            style={{
-              width: 24, height: 24,
-              background: c,
-              border: color === c ? "2.5px solid #4F46E5" : "2px solid #D1D5DB",
-              transform: color === c ? "scale(1.25)" : "scale(1)",
-            }}
-          />
-        ))}
-        {/* 전체 팔레트 열기 */}
-        <button
-          onClick={() => setPaletteOpen((p) => !p)}
-          className="rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs transition-colors"
-          style={{
-            width: 24, height: 24,
-            background: paletteOpen ? "#4F46E5" : "#F3F4F6",
-            color: paletteOpen ? "white" : "#6B7280",
-            border: "2px dashed #D1D5DB",
-          }}
-          title="색상 더보기"
-        >
-          {paletteOpen ? "▲" : "＋"}
-        </button>
-      </div>
-
-      {/* ── Row 3: 전체 팔레트 (펼침) ── */}
+      {/* ── Row 2: 전체 팔레트 (펼침 시) ── */}
       {paletteOpen && (
-        <div
-          className="rounded-2xl p-3"
-          style={{ background: "white", border: "2px solid #E5E7EB" }}
-        >
-          <p className="text-xs font-bold mb-2" style={{ color: "#9CA3AF" }}>🎨 모든 색상</p>
+        <div className="rounded-2xl p-3 flex-shrink-0"
+          style={{ background: "white", border: "2px solid #E5E7EB" }}>
           <div className="flex flex-wrap gap-1.5 items-center">
             {PALETTE.map((c, idx) => (
-              <button
-                key={`pal-${idx}`}
+              <button key={`pal-${idx}`}
                 onClick={() => { setColor(c); setPaletteOpen(false); }}
                 className="rounded-full transition-all"
                 style={{
-                  width: 30, height: 30, background: c,
+                  width: 28, height: 28, background: c,
                   border: color === c ? "3px solid #4F46E5" : "2px solid #D1D5DB",
                   transform: color === c ? "scale(1.2)" : "scale(1)",
                   boxShadow: color === c ? "0 0 0 2px white, 0 0 0 4px #4F46E5" : "none",
-                  transition: "transform 0.12s",
                 }}
               />
             ))}
-            <label
-              className="rounded-full flex items-center justify-center font-black text-base cursor-pointer"
-              style={{ width: 30, height: 30, border: "2px dashed #D1D5DB", background: "white", color: "#9CA3AF" }}
-              title="직접 색 고르기"
-            >
+            <label className="rounded-full flex items-center justify-center cursor-pointer text-lg"
+              style={{ width: 28, height: 28, border: "2px dashed #D1D5DB", background: "white", color: "#9CA3AF" }}
+              title="직접 색 고르기">
               +
-              <input type="color" value={color} onChange={(e) => { setColor(e.target.value); setPaletteOpen(false); }} className="sr-only" />
+              <input type="color" value={color}
+                onChange={(e) => { setColor(e.target.value); setPaletteOpen(false); }}
+                className="sr-only" />
             </label>
           </div>
         </div>
       )}
 
-      {/* ── Row 4: 크기 슬라이더 (붓/지우개) ── */}
-      {tool !== "fill" && (
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-xl"
-          style={{ background: "white", border: "2px solid #E5E7EB", width: "fit-content" }}
-        >
-          <span className="text-xs font-bold" style={{ color: "#9CA3AF" }}>
-            {tool === "brush" ? "붓 크기" : "지우개 크기"}
-          </span>
-          <input
-            type="range"
-            min={tool === "eraser" ? 10 : 4}
-            max={tool === "eraser" ? 50 : 30}
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            style={{ width: 100, cursor: "pointer" }}
-          />
-          {/* 크기 미리보기 원 */}
-          <div
-            className="rounded-full flex-shrink-0"
-            style={{
-              width: Math.min(brushSize * 0.7, 24),
-              height: Math.min(brushSize * 0.7, 24),
-              background: tool === "brush" ? color : "#D1D5DB",
-              border: "1.5px solid #E5E7EB",
-              transition: "width 0.1s, height 0.1s",
-            }}
-          />
-        </div>
-      )}
-
-      {/* ── 3-레이어 캔버스 영역 ── */}
+      {/* ── 캔버스 영역 (남은 공간 전부 사용) ── */}
       <div
         ref={containerRef}
-        className="relative rounded-2xl overflow-hidden"
-        style={{ border: "3px solid #E5E7EB", minHeight: 300, cursor: tool === "fill" ? "crosshair" : "default", background: "white" }}
+        className="relative rounded-2xl overflow-hidden flex-1 min-h-0"
+        style={{
+          border: "3px solid #E5E7EB",
+          cursor: tool === "fill" ? "crosshair" : "default",
+          background: "white",
+        }}
         onClick={handleContainerClick}
       >
-        {/* 레이어 1: fill 캔버스 */}
-        <canvas ref={fillCanvasRef}
-          className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 1, pointerEvents: "none" }}
-        />
-
-        {/* 레이어 2: SVG 윤곽선 */}
-        <div className="relative w-full"
+        <canvas ref={fillCanvasRef} className="absolute inset-0 w-full h-full"
+          style={{ zIndex: 1, pointerEvents: "none" }} />
+        <div className="absolute inset-0 w-full h-full"
           style={{ zIndex: 2, pointerEvents: "none", lineHeight: 0 }}
-          dangerouslySetInnerHTML={{ __html: displaySvg }}
+          dangerouslySetInnerHTML={{ __html: `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${displaySvg}</div>` }}
         />
-
-        {/* 레이어 3: 브러시 캔버스 */}
-        <canvas ref={brushCanvasRef}
-          className="absolute inset-0 w-full h-full"
+        <canvas ref={brushCanvasRef} className="absolute inset-0 w-full h-full"
           style={{
-            zIndex: 3,
-            touchAction: "none",
+            zIndex: 3, touchAction: "none",
             pointerEvents: tool !== "fill" ? "auto" : "none",
             cursor: tool === "brush" ? "crosshair" : tool === "eraser" ? "cell" : "default",
           }}
@@ -647,15 +635,6 @@ export default function ColoringStudio({
           onPointerCancel={handlePointerUp}
         />
       </div>
-
-
-      <p className="text-xs text-center" style={{ color: "#9CA3AF" }}>
-        {tool === "fill"
-          ? "영역을 탭하면 색이 채워져요"
-          : tool === "brush"
-          ? "손가락으로 자유롭게 그려요"
-          : "지우고 싶은 곳을 문질러요"}
-      </p>
     </div>
   );
 }

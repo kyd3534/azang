@@ -91,37 +91,60 @@ export function playFillSound() {
   } catch { /* ignore */ }
 }
 
-/* ── 브러시: 연필 소리 ── */
-let _lastBrush = 0;
+/* ── 브러시: 연필 소리 (1초, 드래그 중 자연스럽게 이어짐) ── */
 let _brushSrc: AudioBufferSourceNode | null = null;
+let _brushGain: GainNode | null = null;
+let _brushEndTime = 0; // AudioContext 기준 종료 시각
 
 export function playBrushSound() {
-  const now = Date.now();
-  if (now - _lastBrush < 60) return;
-  _lastBrush = now;
-
   const buf = _pencilBuf;
   if (!buf) return;
 
   try {
     const ac = getAC();
     const t = ac.currentTime;
+
+    // 현재 클립이 0.25초 이상 남아있으면 새로 시작하지 않음 (자연스럽게 이어짐)
+    if (t < _brushEndTime - 0.25) return;
+
+    // 이전 소스 정리
     try { _brushSrc?.stop(); } catch { /* */ }
 
-    const src = ac.createBufferSource();
-    src.buffer = buf;
-    const clipDur = 0.18;
+    const clipDur = Math.min(1.0, buf.duration);
     const maxOff = Math.max(0, buf.duration - clipDur);
     const offset = Math.random() * maxOff;
 
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+
     const gain = ac.createGain();
-    gain.gain.setValueAtTime(0.85, t);
+    gain.gain.setValueAtTime(0.9, t);
+    // 끝 0.12초에서 페이드아웃 (다음 클립과 자연스럽게 이어지도록)
+    gain.gain.setValueAtTime(0.9, t + clipDur - 0.12);
     gain.gain.exponentialRampToValueAtTime(0.001, t + clipDur);
 
-    src.connect(gain); gain.connect(ac.destination);
+    src.connect(gain);
+    gain.connect(ac.destination);
     src.start(t, offset, clipDur);
+
     _brushSrc = src;
+    _brushGain = gain;
+    _brushEndTime = t + clipDur;
   } catch { /* ignore */ }
+}
+
+export function stopBrushSound() {
+  if (!_brushSrc || !_brushGain) return;
+  try {
+    const ac = getAC();
+    const t = ac.currentTime;
+    _brushGain.gain.setValueAtTime(_brushGain.gain.value, t);
+    _brushGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    _brushSrc.stop(t + 0.08);
+  } catch { /* */ }
+  _brushSrc = null;
+  _brushGain = null;
+  _brushEndTime = 0;
 }
 
 /* ── 지우개 소리 ── */

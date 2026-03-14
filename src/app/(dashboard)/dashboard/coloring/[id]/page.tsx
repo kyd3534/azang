@@ -24,9 +24,11 @@ export default async function ColoringViewPage({ params }: { params: Promise<{ i
     .single();
 
   return (
-    <div>
-      <PageHeader title={page.title} emoji="🎨" backHref="/dashboard/coloring" />
-      <div className="max-w-2xl">
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 88px)" }}>
+      <div className="flex-shrink-0">
+        <PageHeader title={page.title} emoji="🎨" backHref="/dashboard/coloring" />
+      </div>
+      <div className="flex-1 min-h-0 pb-1">
         <ColoringStudio
           pageId={id}
           svgContent={page.svg_content}

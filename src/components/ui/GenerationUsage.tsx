@@ -14,12 +14,12 @@ export default function GenerationUsage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
       supabase
         .from("profiles")
         .select("generation_count, generation_limit, generation_reset_at")
-        .eq("id", user.id)
+        .eq("id", session.user.id)
         .single()
         .then(({ data }) => {
           if (data) setUsage(data as Usage);

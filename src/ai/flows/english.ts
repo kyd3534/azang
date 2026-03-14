@@ -1,55 +1,264 @@
 import { z } from "zod";
 import { ai } from "./index";
+import { DEVELOPMENTAL_CONTEXT, ENGLISH_PEDAGOGY } from "../pedagogy";
+import type { AgeGroup } from "../pedagogy";
 
 const AGE_GROUP = z.enum(["1-2", "3-4", "5-6", "7-8", "9-10"]);
 
 const EnglishInputSchema = z.object({
   ageGroup: AGE_GROUP,
-  topic: z.string().optional().describe("단어/대화 주제 (예: 동물, 학교, 가족)"),
+  topic: z.string().optional().describe("주제 (예: 동물, 학교, 가족)"),
 });
 
-const WordItemSchema = z.object({
-  word: z.string(),
-  pronunciation: z.string().describe("한글 발음 표기"),
-  meaning: z.string(),
-  emoji: z.string(),
-  exampleSentence: z.string(),
-  exampleTranslation: z.string(),
+// ─── 연령별 스키마 ──────────────────────────────────────────────────────────
+
+/** 🍼 1-2세 — 소리·이미지 연결 카드 */
+const SoundImageSchema = z.object({
+  contentType: z.enum(["sound_image"]),
+  title: z.string(),
+  ageGroup: z.string(),
+  theme: z.string(),
+  words: z.array(z.object({
+    word: z.string(),
+    tts_text: z.string().describe("느리고 반복적인 TTS 텍스트 (예: dog~~ dog~~)"),
+    image_query: z.string().describe("이미지 API용 영문 키워드 (예: cute puppy dog photo)"),
+    rhyme_hint: z.string().optional().describe("운율 단어 (예: dog, log, frog)"),
+    emoji: z.string(),
+  })),
+  repeat_count: z.number().default(3),
+  parent_tip: z.string().describe("부모를 위한 10단어 이내 활동 팁"),
 });
 
-const DialogueLineSchema = z.object({
-  speaker: z.enum(["A", "B"]),
-  speakerName: z.string(),
-  text: z.string(),
-  translation: z.string(),
+/** 🐥 3-4세 — 알파벳·파닉스 씨앗 */
+const AlphabetPhonicsSchema = z.object({
+  contentType: z.enum(["alphabet_phonics"]),
+  title: z.string(),
+  ageGroup: z.string(),
+  letter: z.object({
+    char: z.string().describe("대문자 알파벳 1개"),
+    sound: z.string().describe("IPA 발음 기호 (예: /b/)"),
+    mnemonic: z.string().describe("연상 문구 (예: B is for Ball! Buh-buh-Ball!)"),
+    image_query: z.string(),
+    tts_intro: z.string(),
+    mouth_tip: z.string().describe("입 모양 힌트 (예: Press lips together, then pop!)"),
+  }),
+  sight_word: z.object({
+    word: z.string().describe("Dolch Pre-primer 단어"),
+    tts: z.string(),
+    sentence: z.string().describe("최대 4단어 예문"),
+  }),
+  words: z.array(z.object({
+    word: z.string(),
+    emoji: z.string(),
+    breakdown: z.object({
+      onset: z.string().describe("어두 자음 (예: b)"),
+      rime: z.string().describe("모음+이후 (예: all)"),
+      colors: z.array(z.string()).describe("각 음소 색깔 (blue=자음, red=모음)"),
+    }),
+    image_query: z.string(),
+    example_sentence: z.string().describe("최대 5단어"),
+  })).describe("4개 CVC 단어"),
+  story: z.object({
+    title: z.string(),
+    lines: z.array(z.string()).describe("3-4줄"),
+    repeat_phrase: z.string().describe("반복 구문 (예: B~ B~ Ball!)"),
+    emotion_end: z.string().describe("마지막 감정 문장"),
+  }),
+  rhyme_set: z.array(z.string()).describe("운율 단어 3개"),
 });
 
-const CombinedSchema = z.object({
+/** 🐰 5-6세 — 체계적 파닉스 완성 */
+const PhonicsSystematicSchema = z.object({
+  contentType: z.enum(["phonics_systematic"]),
+  title: z.string(),
+  ageGroup: z.string(),
+  focus: z.object({
+    type: z.string().describe("short_vowel | blend | digraph"),
+    pattern: z.string().describe("예: short_a, st_blend, sh_digraph"),
+    example_word: z.string(),
+    rule_plain: z.string().describe("아이 눈높이 1문장 규칙"),
+    color_decode: z.object({
+      word: z.string(),
+      parts: z.array(z.object({
+        char: z.string(),
+        role: z.string().describe("consonant | vowel | blend | digraph"),
+        color: z.string().describe("blue | red | green"),
+      })),
+      blend_guide: z.string().describe("예: sss-ttt-op → stop"),
+    }),
+  }),
+  sight_word: z.object({
+    word: z.string().describe("Dolch primer/grade1 단어"),
+    cannot_decode: z.boolean().default(true),
+    memory_tip: z.string().describe("시각적 기억법 (예: SAID has AI in the middle)"),
+  }),
+  words: z.array(z.object({
+    word: z.string(),
+    emoji: z.string(),
+    syllable_count: z.number(),
+    color_parts: z.array(z.object({
+      char: z.string(),
+      color: z.string(),
+    })),
+    image_query: z.string(),
+    example: z.string().describe("6-8단어"),
+  })).describe("5개 단어"),
+  minimal_pairs: z.array(z.object({
+    word_a: z.string(),
+    word_b: z.string(),
+    difference: z.string(),
+  })).describe("소리 변별 쌍 2개"),
+  story: z.object({
+    title: z.string(),
+    lines: z.array(z.string()).describe("5-6줄"),
+    pattern_word_count: z.number().describe("패턴 단어 등장 횟수"),
+    comprehension_q: z.string(),
+  }),
+});
+
+/** 🦊 7-8세 — 독립 독해 + 유창성 */
+const ReadingFluencySchema = z.object({
+  contentType: z.enum(["reading_fluency"]),
+  title: z.string(),
+  ageGroup: z.string(),
+  word_study: z.object({
+    focus: z.string().describe("multi_syllable | prefix | suffix"),
+    target: z.string().describe("예: un- 또는 yesterday"),
+    rule: z.string().describe("예: un- means NOT or OPPOSITE"),
+    examples: z.array(z.object({
+      word: z.string(),
+      breakdown: z.string().describe("예: un-happy"),
+      meaning: z.string(),
+    })).describe("3개"),
+    stress_pattern: z.string().describe("예: YES-ter-day (stress on 1st)"),
+  }),
+  vocabulary: z.array(z.object({
+    word: z.string(),
+    emoji: z.string(),
+    syllables: z.string().describe("예: ad-ven-ture"),
+    pos: z.string(),
+    definition: z.string().describe("10단어 이내"),
+    context_clue_sentence: z.string().describe("문맥으로 의미 추론 가능한 문장"),
+    word_family: z.array(z.string()).describe("2-3개"),
+    image_query: z.string(),
+  })).describe("6개"),
+  passage: z.object({
+    title: z.string(),
+    genre: z.string().describe("narrative | informational | procedural"),
+    line_count: z.number(),
+    text: z.string().describe("8-10줄 완전한 지문. 6개 어휘 모두 자연스럽게 포함"),
+    fluency_note: z.string().describe("읽기 팁 (예: Pause at every comma)"),
+  }),
+  questions: z.array(z.object({
+    type: z.string().describe("literal | inferential"),
+    question: z.string(),
+    answer: z.string().optional(),
+    text_location: z.string().optional(),
+    thinking_prompt: z.string().optional(),
+    sample_answer: z.string().optional(),
+  })).describe("2개 질문"),
+  activity: z.object({
+    type: z.string().default("word_map"),
+    center_word: z.string(),
+    branches: z.array(z.string()).describe("definition, synonym, antonym, my_sentence"),
+  }),
+});
+
+/** 🦁 9-10세 — 학술 문해력 */
+const AcademicLiteracySchema = z.object({
+  contentType: z.enum(["academic_literacy"]),
+  title: z.string(),
+  ageGroup: z.string(),
+  theme: z.string(),
+  vocabulary: z.array(z.object({
+    word: z.string(),
+    emoji: z.string(),
+    tier: z.number().describe("1=일상 2=학술 3=전공"),
+    etymology: z.string().describe("어원 (예: Latin: ecosystema = eco+systema)"),
+    definition: z.string(),
+    pos: z.string(),
+    example_1: z.string().describe("일상적 문맥"),
+    example_2: z.string().describe("학술적 문맥"),
+    word_family: z.array(z.string()),
+    collocations: z.array(z.string()).describe("자주 쓰이는 결합어 (예: complex ecosystem)"),
+  })).describe("8개 (일반 4개 + 학술 4개)"),
+  passage: z.object({
+    title: z.string(),
+    genre: z.string().describe("informational | narrative | persuasive"),
+    text_structure: z.string().describe("cause_effect | compare_contrast | problem_solution | chronological"),
+    line_count: z.number(),
+    text: z.string().describe("13-15줄 완전한 지문. 8개 어휘 모두 포함"),
+    text_features: z.object({
+      topic_sentence: z.string(),
+      thesis_or_claim: z.string(),
+      key_evidence: z.array(z.string()).describe("2-3개"),
+    }),
+  }),
+  questions: z.array(z.object({
+    type: z.string().describe("literal | inferential | critical"),
+    question: z.string(),
+    answer: z.string().optional(),
+    evidence_prompt: z.string().optional(),
+    sample_answer: z.string().optional(),
+    sentence_starters: z.array(z.string()).optional(),
+    ai_feedback_rubric: z.object({
+      "3pts": z.string(),
+      "2pts": z.string(),
+      "1pt": z.string(),
+    }).optional(),
+  })).describe("3개 질문 (literal + inferential + critical)"),
+  fill_in_blank: z.array(z.string()).describe("빈칸 채우기 2문장 (___로 표시)"),
+  extension: z.object({
+    type: z.string().default("research_prompt"),
+    prompt: z.string().describe("더 알아보기 질문 1개"),
+    search_safe: z.boolean().default(true),
+  }),
+});
+
+// ── 하위 호환 구 타입 (DB 저장된 기존 데이터용) ──────────────────────────
+const LegacyCombinedSchema = z.object({
   contentType: z.enum(["combined"]),
   title: z.string(),
   ageGroup: z.string(),
-  words: z.array(WordItemSchema),
+  words: z.array(z.object({
+    word: z.string(),
+    pronunciation: z.string(),
+    meaning: z.string(),
+    emoji: z.string(),
+    exampleSentence: z.string(),
+    exampleTranslation: z.string(),
+  })),
   situation: z.string(),
-  dialogue: z.array(DialogueLineSchema),
+  dialogue: z.array(z.object({
+    speaker: z.enum(["A", "B"]),
+    speakerName: z.string(),
+    text: z.string(),
+    translation: z.string(),
+  })),
 });
 
-export type EnglishInput = z.infer<typeof EnglishInputSchema>;
-export type WordItem = z.infer<typeof WordItemSchema>;
-export type DialogueLine = z.infer<typeof DialogueLineSchema>;
-export type CombinedOutput = z.infer<typeof CombinedSchema>;
+export type SoundImageOutput = z.infer<typeof SoundImageSchema>;
+export type AlphabetPhonicsOutput = z.infer<typeof AlphabetPhonicsSchema>;
+export type PhonicsSystematicOutput = z.infer<typeof PhonicsSystematicSchema>;
+export type ReadingFluencyOutput = z.infer<typeof ReadingFluencySchema>;
+export type AcademicLiteracyOutput = z.infer<typeof AcademicLiteracySchema>;
+export type CombinedOutput = z.infer<typeof LegacyCombinedSchema>;
 
+export type EnglishInput = z.infer<typeof EnglishInputSchema>;
+
+// Backward compat legacy types
 export type WordsOutput = {
   contentType: "words";
   title: string;
   ageGroup: string;
-  words: WordItem[];
+  words: CombinedOutput["words"];
 };
 export type DialogueOutput = {
   contentType: "dialogue";
   title: string;
   ageGroup: string;
   situation: string;
-  lines: DialogueLine[];
+  lines: CombinedOutput["dialogue"];
   vocabulary: { word: string; meaning: string }[];
 };
 export type SentencesOutput = {
@@ -58,70 +267,75 @@ export type SentencesOutput = {
   ageGroup: string;
   sentences: { sentence: string; translation: string; pattern: string; emoji: string; practice: string }[];
 };
-export type EnglishOutput = CombinedOutput | WordsOutput | DialogueOutput | SentencesOutput;
 
-// ── 연령별 엄격한 사양 ──────────────────────────────────────────────────────
-const AGE_SPECS: Record<string, {
-  wordCount: number;
-  dialogueLines: number;
-  profile: string;
-  allowed: string;
-  forbidden: string;
-  vocabLevel: string;
-  grammarLevel: string;
-  sentenceLimit: string;
-}> = {
+export type EnglishOutput =
+  | SoundImageOutput
+  | AlphabetPhonicsOutput
+  | PhonicsSystematicOutput
+  | ReadingFluencyOutput
+  | AcademicLiteracyOutput
+  | CombinedOutput
+  | WordsOutput
+  | DialogueOutput
+  | SentencesOutput;
+
+// ── 연령별 교육 전략 ────────────────────────────────────────────────────────
+const AGE_SPECS = {
   "1-2": {
     wordCount: 3,
-    dialogueLines: 0,
-    profile: "1-2세 영아 (말을 막 시작하는 수준, 단어 인식 단계)",
-    allowed: "cat, dog, ball, cup, hat, sun, red, big, mom, dad 같은 1-2음절 기초 명사/형용사",
-    forbidden: "동사(run, eat 제외), 전치사, 접속사, 3음절 이상 단어, 문장, 대화, 추상 개념",
-    vocabLevel: "최빈도 100단어 내 단어만. 반드시 3~4글자 이내 단어(cat, dog, red, sun 등)",
-    grammarLevel: "문법 불필요. 단어 카드 수준",
-    sentenceLimit: "예문은 단어 하나 또는 '(단어) + 이모지' 형태만. 절대 완전한 문장 금지",
+    theory: "Pre-linguistic stage. Brain wiring phoneme maps. Sound+image+emotion=memory. Repetition IS the lesson. No alphabet names — only sounds and rhythm.",
+    curriculum: ["Sound awareness", "Rhyme play", "1-3 daily words", "TTS repeat 3+"],
+    rules: `- words array MAX 3
+- No sentences ever
+- No alphabet letter names
+- No spelling activities
+- image_query must be English, photo-friendly
+- tts_text: slow, warm, repetitive (e.g. "dog~~ dog~~")
+- rhyme_hint: include if easy rhyme exists (e.g. "dog, log, frog")
+- parent_tip: 10 words max (e.g. "Point to real objects as you play!")`,
   },
   "3-4": {
     wordCount: 4,
-    dialogueLines: 4,
-    profile: "3-4세 유아 (짧은 문장 이해, 기초 어휘 200단어 수준)",
-    allowed: "기초 명사/동사(run, eat, play, like), 간단한 형용사(big, small, red, happy)",
-    forbidden: "추상 명사, 과거시제, 완료시제, 가정법, 수동태, 4음절 이상 단어, 의문사(why, how) 사용 질문",
-    vocabLevel: "최빈도 300단어 내. 최대 5글자 이내(apple, happy, sunny 정도가 최대)",
-    grammarLevel: "현재형 긍정문만(I like~, It is~). 의문문은 Yes/No 질문만(Is it~?)",
-    sentenceLimit: "예문 최대 4단어. 대화 각 줄 최대 5단어",
+    theory: "Language explosion. Vocabulary grows 5-10 words/day. Phonological awareness: can hear that 'cat' and 'hat' rhyme. Alphabet shape recognition begins. Play = learning.",
+    curriculum: ["대문자 인식", "Letter-Sound 1:1 매핑", "CVC 단어 (cat, dog, big)", "단순 문장 1개", "Sight word 1개/레슨"],
+    rules: `- Only CVC words (consonant-vowel-consonant)
+- No silent letters, no blends (sh, ch, th)
+- story.lines: 3-4 ONLY, simple subject-verb
+- sight_word from Dolch pre-primer: the, a, and, is, in, it, big, can, go, see
+- breakdown.onset = initial consonant, breakdown.rime = vowel+ending
+- colors array: ["blue","red","blue"] pattern for CVC`,
   },
   "5-6": {
     wordCount: 5,
-    dialogueLines: 6,
-    profile: "5-6세 유아 (기초 문장 읽기 시작, 기본 파닉스 학습 단계)",
-    allowed: "기초 Sight Words + 주제 관련 명사/동사/형용사. 현재/현재진행형 문장",
-    forbidden: "과거완료, 가정법, 수동태, 관계대명사(that/which/who 절), 6음절 이상 단어, 이중부정",
-    vocabLevel: "Fry 첫 번째 100단어 수준 + 주제 단어. 최대 7글자(rainbow, birthday 정도가 최대)",
-    grammarLevel: "현재형/현재진행형(I am playing). 단순 미래(I will~). 기초 의문문(What, Where, Who)",
-    sentenceLimit: "예문 최대 7단어. 대화 각 줄 최대 8단어",
+    theory: "Phonemic awareness peak. Can segment phonemes: /k/-/æ/-/t/ = cat. Ready for systematic phonics: short vowels → long vowels → blends → digraphs. Sight word bank: 50-100 words.",
+    curriculum: ["단모음 5개 (a,e,i,o,u)", "자음 블렌드 (st,bl,cr,dr)", "이중자음 digraphs (sh,ch,th,wh)", "Sight words 50개", "5-6줄 이야기 + 이해 질문 1개"],
+    rules: `- minimal_pairs: 2 pairs showing today's pattern vs another
+- blend_guide: phoneme-by-phoneme then fast blend
+- story: pattern words appear minimum 4 times
+- comprehension_q: literal, single-word answer OK
+- color_parts: blue=consonant, red=vowel, green=blend/digraph`,
   },
   "7-8": {
-    wordCount: 7,
-    dialogueLines: 8,
-    profile: "7-8세 아동 (초등 저학년, 기초 문해력 갖춤)",
-    allowed: "초등 저학년 어휘. 형용사/부사 포함. 과거시제 기초 문장",
-    forbidden: "완료시제(have + p.p.), 가정법, 관계절(which/who/that), 전문용어, 은어/속어",
-    vocabLevel: "초등 1-2학년 수준 어휘. 접두사(un-, re-)가 붙은 단어 가능",
-    grammarLevel: "단순 현재/과거/미래. 비교급(bigger, faster). 기초 접속사(because, but, and, so)",
-    sentenceLimit: "예문 최대 12단어. 대화 각 줄 최대 12단어. 복합문 가능",
+    wordCount: 6,
+    theory: "Transitioning from 'learning to read' to 'reading to learn.' Phonics complete. Now: fluency, vocabulary depth, comprehension strategies. Multi-syllable words. Prefixes/suffixes.",
+    curriculum: ["다음절 단어 분해", "접두사 un-/re-/pre-/dis-", "접미사 -ful/-less/-ness", "Context clues", "8-10줄 지문 + 추론 질문"],
+    rules: `- passage.text: FULL 8-10 line passage, include ALL 6 vocabulary words naturally
+- questions: literal (factual) + inferential (thinking required)
+- activity.branches: ["definition","synonym","antonym","my_sentence"]
+- word_study: show prefix/suffix/multi-syllable rule with 3 examples
+- context_clue_sentence: meaning hinted but not stated explicitly`,
   },
   "9-10": {
-    wordCount: 10,
-    dialogueLines: 10,
-    profile: "9-10세 아동 (초등 고학년, 풍부한 어휘 학습 단계)",
-    allowed: "초등 고학년 어휘. 추상 명사/다음절 단어. 다양한 시제. 의견/감정 표현",
-    forbidden: "고급 문학 어휘, 전문용어, 속어/비속어, 부정적/폭력적 내용",
-    vocabLevel: "초등 3-4학년 수준 어휘. 접두사/접미사 다양하게 가능",
-    grammarLevel: "현재완료 기초(have been), 수동태 기초, 비교급/최상급, 복합문/종속절 가능",
-    sentenceLimit: "예문 최대 15단어. 대화 각 줄 최대 15단어. 자연스러운 일상 대화 수준",
+    wordCount: 8,
+    theory: "Academic language acquisition. Tier 2 vocabulary (analyze, describe, compare) critical for school success. Genre awareness. Critical thinking and opinion writing begin. Etymology helps retention.",
+    curriculum: ["Tier 2 학술 어휘", "어원(etymology)", "3개 장르 읽기", "13-15줄 지문", "비판적 사고 질문", "Fill-in-blank"],
+    rules: `- vocabulary: 4 general (tier1-2) + 4 academic (tier2-3)
+- passage.text: FULL 13-15 line passage, ALL 8 vocab words used naturally
+- questions[2] MUST be critical type with ai_feedback_rubric
+- fill_in_blank: 2 sentences with ___ for vocab practice
+- extension.prompt: 1 question to explore further (no external links)`,
   },
-};
+} as const;
 
 export const englishFlow = ai.defineFlow(
   {
@@ -129,74 +343,379 @@ export const englishFlow = ai.defineFlow(
     inputSchema: EnglishInputSchema,
   },
   async (input) => {
-    const spec = AGE_SPECS[input.ageGroup] ?? AGE_SPECS["5-6"];
-    const topic = input.topic ?? "일상생활";
+    const age = input.ageGroup as AgeGroup;
+    const spec = AGE_SPECS[age];
+    const devCtx = DEVELOPMENTAL_CONTEXT[age];
+    const pedagogy = ENGLISH_PEDAGOGY[age];
+    const topic = input.topic ?? "everyday life";
 
-    if (input.ageGroup === "1-2") {
+    // ── 🍼 1-2세 ────────────────────────────────────────────────────────
+    if (age === "1-2") {
       const { output } = await ai.generate({
-        prompt: `유아 영어 단어 카드를 생성하세요.
+        config: { temperature: 0.3 },
+        prompt: `You are a warm, expert early childhood English teacher.
+Output ONLY valid JSON matching the schema. No preamble, no markdown fences.
 
-【대상】 ${spec.profile}
-【주제】 "${topic}"
-【단어 수】 ${spec.wordCount}개
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DEVELOPMENTAL THEORY]
+${devCtx}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【반드시 지켜야 할 엄격한 규칙】
+[PEDAGOGY]
+${pedagogy}
 
-✅ 사용 가능한 어휘: ${spec.allowed}
-❌ 절대 금지: ${spec.forbidden}
-📏 어휘 수준: ${spec.vocabLevel}
-📏 문법 수준: ${spec.grammarLevel}
-📏 문장 길이: ${spec.sentenceLimit}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Theory: ${spec.theory}
+Curriculum goals: ${spec.curriculum.join(" · ")}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【출력 형식】
-- situation은 빈 문자열("")
-- dialogue는 빈 배열([])
-- 각 word의 exampleSentence는 단어 1개 또는 이모지만 (문장 완전 금지)
-- pronunciation은 아이가 따라 말할 수 있게 간단한 한글 표기 (예: 캣, 독, 볼)
+[INPUT]
+Topic: "${topic}"
+Age: 1-2 years
 
-⚠️ 생성 전 자가 검토: 각 단어가 위 규칙을 모두 만족하는지 확인 후 출력하세요.`,
-        output: { schema: CombinedSchema },
+[SCHEMA]
+{
+  "contentType": "sound_image",
+  "title": string,
+  "ageGroup": "1-2",
+  "theme": string,
+  "words": [              // MAX 3
+    {
+      "word": string,     // simple CVC or single syllable
+      "tts_text": string, // e.g. "dog~~ dog~~"
+      "image_query": string, // English, photo-friendly
+      "rhyme_hint": string,  // optional: "dog, log, frog"
+      "emoji": string
+    }
+  ],
+  "repeat_count": 3,
+  "parent_tip": string    // 10 words max
+}
+
+[RULES]
+${spec.rules}
+
+⚠️ Self-check before output: All words ≤ 2 syllables? No sentences? JSON valid?`,
+        output: { schema: SoundImageSchema },
       });
-      return { ...(output as CombinedOutput), ageGroup: input.ageGroup, contentType: "combined" as const };
+      return { ...(output as SoundImageOutput), ageGroup: input.ageGroup };
     }
 
+    // ── 🐥 3-4세 ────────────────────────────────────────────────────────
+    if (age === "3-4") {
+      const { output } = await ai.generate({
+        config: { temperature: 0.7 },
+        prompt: `You are a playful phonics teacher for preschoolers.
+Output ONLY valid JSON. No preamble, no markdown.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DEVELOPMENTAL THEORY]
+${devCtx}
+
+[PEDAGOGY]
+${pedagogy}
+
+Theory: ${spec.theory}
+Curriculum: ${spec.curriculum.join(" · ")}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[INPUT]
+Topic: "${topic}"
+Age: 3-4 years
+
+[SCHEMA]
+{
+  "contentType": "alphabet_phonics",
+  "title": string,
+  "ageGroup": "3-4",
+  "letter": {
+    "char": string,          // ONE uppercase letter
+    "sound": string,         // IPA: "/b/"
+    "mnemonic": string,      // "B is for Ball! Buh-buh-Ball!"
+    "image_query": string,
+    "tts_intro": string,     // "B says /b/~ like Ball~ Ball~"
+    "mouth_tip": string      // "Press lips together, then pop!"
+  },
+  "sight_word": {
+    "word": string,          // Dolch pre-primer
+    "tts": string,
+    "sentence": string       // max 4 words
+  },
+  "words": [                 // 4 CVC words with the letter sound
+    {
+      "word": string,
+      "emoji": string,
+      "breakdown": {
+        "onset": string,     // initial consonant(s)
+        "rime": string,      // vowel + ending
+        "colors": [string]   // e.g. ["blue","red","blue"]
+      },
+      "image_query": string,
+      "example_sentence": string  // max 5 words
+    }
+  ],
+  "story": {
+    "title": string,
+    "lines": [string],       // 3-4 ONLY
+    "repeat_phrase": string, // e.g. "B~ B~ Ball!"
+    "emotion_end": string    // feeling word at end
+  },
+  "rhyme_set": [string]      // 3 rhyming words
+}
+
+[RULES]
+${spec.rules}
+
+⚠️ Self-check: Only CVC words? Story 3-4 lines? Rhyme set has 3 words? JSON valid?`,
+        output: { schema: AlphabetPhonicsSchema },
+      });
+      return { ...(output as AlphabetPhonicsOutput), ageGroup: input.ageGroup };
+    }
+
+    // ── 🐰 5-6세 ────────────────────────────────────────────────────────
+    if (age === "5-6") {
+      const { output } = await ai.generate({
+        config: { temperature: 0.65 },
+        prompt: `You are a systematic phonics teacher. Children can now blend sounds into words.
+Output ONLY valid JSON. No preamble, no markdown.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DEVELOPMENTAL THEORY]
+${devCtx}
+
+[PEDAGOGY]
+${pedagogy}
+
+Theory: ${spec.theory}
+Curriculum: ${spec.curriculum.join(" · ")}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[INPUT]
+Topic: "${topic}"
+Age: 5-6 years
+
+[SCHEMA]
+{
+  "contentType": "phonics_systematic",
+  "title": string,
+  "ageGroup": "5-6",
+  "focus": {
+    "type": "short_vowel"|"blend"|"digraph",
+    "pattern": string,       // e.g. "short_a", "st_blend", "sh_digraph"
+    "example_word": string,
+    "rule_plain": string,    // 1 sentence, child-friendly
+    "color_decode": {
+      "word": string,
+      "parts": [{"char":string,"role":string,"color":string}],
+      "blend_guide": string  // e.g. "c-a-t → cat"
+    }
+  },
+  "sight_word": {
+    "word": string,          // Dolch primer/grade1
+    "cannot_decode": true,
+    "memory_tip": string     // visual trick
+  },
+  "words": [                 // 5 words following the pattern
+    {
+      "word": string,
+      "emoji": string,
+      "syllable_count": number,
+      "color_parts": [{"char":string,"color":string}],
+      "image_query": string,
+      "example": string      // 6-8 words
+    }
+  ],
+  "minimal_pairs": [         // 2 pairs for sound discrimination
+    {"word_a":string,"word_b":string,"difference":string}
+  ],
+  "story": {
+    "title": string,
+    "lines": [string],       // 5-6 lines
+    "pattern_word_count": number,
+    "comprehension_q": string
+  }
+}
+
+[RULES]
+${spec.rules}
+
+⚠️ Self-check: Pattern words appear 4+ times in story? 2 minimal pairs? JSON valid?`,
+        output: { schema: PhonicsSystematicSchema },
+      });
+      return { ...(output as PhonicsSystematicOutput), ageGroup: input.ageGroup };
+    }
+
+    // ── 🦊 7-8세 ────────────────────────────────────────────────────────
+    if (age === "7-8") {
+      const { output } = await ai.generate({
+        config: { temperature: 0.7 },
+        prompt: `You are a reading comprehension teacher building fluency and inferential thinking.
+Output ONLY valid JSON. No preamble, no markdown.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DEVELOPMENTAL THEORY]
+${devCtx}
+
+[PEDAGOGY]
+${pedagogy}
+
+Theory: ${spec.theory}
+Curriculum: ${spec.curriculum.join(" · ")}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[INPUT]
+Topic: "${topic}"
+Age: 7-8 years
+
+[SCHEMA]
+{
+  "contentType": "reading_fluency",
+  "title": string,
+  "ageGroup": "7-8",
+  "word_study": {
+    "focus": "multi_syllable"|"prefix"|"suffix",
+    "target": string,        // e.g. "un-" or "yesterday"
+    "rule": string,          // "un- means NOT or OPPOSITE"
+    "examples": [{"word":string,"breakdown":string,"meaning":string}],  // 3 items
+    "stress_pattern": string // e.g. "YES-ter-day (stress on 1st syllable)"
+  },
+  "vocabulary": [            // 6 words
+    {
+      "word": string,
+      "emoji": string,
+      "syllables": string,   // e.g. "ad-ven-ture"
+      "pos": string,
+      "definition": string,  // max 10 words
+      "context_clue_sentence": string,
+      "word_family": [string],  // 2-3
+      "image_query": string
+    }
+  ],
+  "passage": {
+    "title": string,
+    "genre": "narrative"|"informational"|"procedural",
+    "line_count": 9,
+    "text": string,          // FULL 8-10 line passage. ALL 6 vocab words included naturally.
+    "fluency_note": string
+  },
+  "questions": [             // 2 questions
+    {
+      "type": "literal",
+      "question": string,
+      "answer": string,
+      "text_location": string
+    },
+    {
+      "type": "inferential",
+      "question": string,
+      "thinking_prompt": string,  // "The text says X... so maybe..."
+      "sample_answer": string
+    }
+  ],
+  "activity": {
+    "type": "word_map",
+    "center_word": string,
+    "branches": ["definition","synonym","antonym","my_sentence"]
+  }
+}
+
+[RULES]
+${spec.rules}
+
+⚠️ Self-check: passage.text FULL written out (not placeholder)? All 6 vocab used? JSON valid?`,
+        output: { schema: ReadingFluencySchema },
+      });
+      return { ...(output as ReadingFluencyOutput), ageGroup: input.ageGroup };
+    }
+
+    // ── 🦁 9-10세 ────────────────────────────────────────────────────────
     const { output } = await ai.generate({
-      prompt: `유아/아동 영어 학습 자료를 생성하세요.
+      config: { temperature: 0.72 },
+      prompt: `You are an academic literacy teacher building content-area vocabulary and critical reading.
+Output ONLY valid JSON. No preamble, no markdown.
 
-【대상】 ${spec.profile}
-【주제】 "${topic}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DEVELOPMENTAL THEORY]
+${devCtx}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【반드시 지켜야 할 엄격한 규칙】
+[PEDAGOGY]
+${pedagogy}
 
-✅ 사용 가능한 어휘: ${spec.allowed}
-❌ 절대 금지: ${spec.forbidden}
-📏 어휘 수준: ${spec.vocabLevel}
-📏 문법 수준: ${spec.grammarLevel}
-📏 문장 길이: ${spec.sentenceLimit}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Theory: ${spec.theory}
+Curriculum: ${spec.curriculum.join(" · ")}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【생성 내용】
+[INPUT]
+Topic: "${topic}"
+Age: 9-10 years
 
-1. words 배열에 단어 ${spec.wordCount}개:
-   - 반드시 위 어휘 수준과 금지 항목을 지키세요
-   - pronunciation: 한글 발음 표기 (예: dog → 독)
-   - exampleSentence: 위 문장 길이 제한 엄수
-   - exampleTranslation: 한국어 번역
+[SCHEMA]
+{
+  "contentType": "academic_literacy",
+  "title": string,
+  "ageGroup": "9-10",
+  "theme": string,
+  "vocabulary": [            // 8 words: 4 general + 4 academic
+    {
+      "word": string,
+      "emoji": string,
+      "tier": 1|2|3,         // 1=everyday, 2=academic, 3=domain-specific
+      "etymology": string,   // e.g. "Latin: vivere (to live)"
+      "definition": string,
+      "pos": string,
+      "example_1": string,   // general context
+      "example_2": string,   // academic context
+      "word_family": [string],
+      "collocations": [string]  // e.g. ["complex ecosystem"]
+    }
+  ],
+  "passage": {
+    "title": string,
+    "genre": "informational"|"narrative"|"persuasive",
+    "text_structure": "cause_effect"|"compare_contrast"|"problem_solution"|"chronological",
+    "line_count": 14,
+    "text": string,          // FULL 13-15 line passage. ALL 8 vocab words used naturally.
+    "text_features": {
+      "topic_sentence": string,
+      "thesis_or_claim": string,
+      "key_evidence": [string]  // 2-3 items
+    }
+  },
+  "questions": [             // 3 questions
+    {
+      "type": "literal",
+      "question": string,
+      "answer": string
+    },
+    {
+      "type": "inferential",
+      "question": string,
+      "evidence_prompt": string,
+      "sample_answer": string
+    },
+    {
+      "type": "critical",
+      "question": string,
+      "sentence_starters": ["I agree because...","I disagree because...","The evidence shows..."],
+      "ai_feedback_rubric": {
+        "3pts": "Clear opinion + 2 evidence + personal connection",
+        "2pts": "Opinion + 1 evidence",
+        "1pt": "Opinion only"
+      }
+    }
+  ],
+  "fill_in_blank": [string],  // 2 sentences with ___ for vocab
+  "extension": {
+    "type": "research_prompt",
+    "prompt": string,
+    "search_safe": true
+  }
+}
 
-2. dialogue 배열에 대화 ${spec.dialogueLines}줄:
-   - 두 명의 친근한 어린이 캐릭터 (speakerName 귀엽게 설정)
-   - words의 단어들을 대화에 자연스럽게 포함
-   - 문장 길이 제한 엄수
-   - 각 줄마다 한국어 번역 포함
-   - situation에 대화 상황 간단히 설명
+[RULES]
+${spec.rules}
 
-⚠️ 생성 전 자가 검토: 모든 단어와 문장이 ${input.ageGroup}세 수준에 맞는지 확인 후 출력하세요.
-단어 하나라도 금지 규칙 위반 시 더 쉬운 단어로 교체하세요.`,
-      output: { schema: CombinedSchema },
+⚠️ Self-check: passage.text FULL written (not placeholder)? All 8 vocab used? Critical question has rubric? JSON valid?`,
+      output: { schema: AcademicLiteracySchema },
     });
-    return { ...(output as CombinedOutput), ageGroup: input.ageGroup, contentType: "combined" as const };
+    return { ...(output as AcademicLiteracyOutput), ageGroup: input.ageGroup };
   }
 );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 
 const COLORS = [
@@ -22,6 +22,21 @@ export default function InteractiveColoringSVG({
   const [strokes, setStrokes] = useState<Record<string, string>>(initialStrokes);
   const supabase = createClient();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pencilAudio = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    pencilAudio.current = new Audio("/sounds/freesound_community-pencil-29272.mp3");
+    pencilAudio.current.preload = "auto";
+    return () => { pencilAudio.current = null; };
+  }, []);
+
+  const playPencil = useCallback(() => {
+    const a = pencilAudio.current;
+    if (!a) return;
+    a.currentTime = 0;
+    a.playbackRate = 0.9 + Math.random() * 0.25; // 0.9~1.15 랜덤 변화로 자연스럽게
+    a.play().catch(() => {});
+  }, []);
 
   const handleFill = useCallback((elementId: string) => {
     const newStrokes = { ...strokes, [elementId]: selectedColor };
@@ -58,11 +73,11 @@ export default function InteractiveColoringSVG({
 
     let id = target.getAttribute("id");
     if (!id) {
-      // id 없으면 동적 부여
       id = `el-${Math.random().toString(36).slice(2, 8)}`;
       target.setAttribute("id", id);
     }
     target.setAttribute("fill", selectedColor);
+    playPencil();
 
     const newStrokes = { ...strokes, [id]: selectedColor };
     setStrokes(newStrokes);

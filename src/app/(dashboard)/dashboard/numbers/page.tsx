@@ -6,7 +6,7 @@ import { generateNumberLesson } from "@/lib/ai-actions";
 import { createClient } from "@/lib/supabase";
 import PageHeader from "@/components/ui/page-header";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import ContentList from "@/components/layout/ContentList";
+import LessonCardGrid, { type CardMeta } from "@/components/layout/LessonCardGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,27 @@ type Tab = "create" | "list" | "practice";
 
 type Lesson = { id: string; title: string; created_at: string; numbers: unknown };
 
+const NUMBERS_CARD_META: Array<{ keywords: string[]; emoji: string; gradient: string; badgeText: string; badgeColor: string }> = [
+  { keywords: ["동물", "농장", "강아지", "고양이", "소", "돼지", "닭", "양", "말"], emoji: "🐄", gradient: "linear-gradient(135deg, #FEF9C3 0%, #FEF08A 100%)", badgeText: "동물농장", badgeColor: "#713F12" },
+  { keywords: ["과일", "가게", "사과", "바나나", "딸기", "포도", "수박", "오렌지"], emoji: "🍊", gradient: "linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)", badgeText: "과일가게", badgeColor: "#9A3412" },
+  { keywords: ["바다", "바닷속", "물고기", "게", "새우", "문어", "돌고래", "고래", "인어"], emoji: "🐠", gradient: "linear-gradient(135deg, #DBEAFE 0%, #BAE6FD 100%)", badgeText: "바닷속", badgeColor: "#075985" },
+  { keywords: ["우주", "별", "행성", "로켓", "우주선", "달", "태양", "외계인"], emoji: "🚀", gradient: "linear-gradient(135deg, #EDE9FE 0%, #C4B5FD 100%)", badgeText: "우주여행", badgeColor: "#4338CA" },
+  { keywords: ["운동장", "축구", "야구", "농구", "달리기", "공", "운동", "체육"], emoji: "⚽", gradient: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", badgeText: "운동장", badgeColor: "#065F46" },
+  { keywords: ["생일", "파티", "케이크", "선물", "풍선", "초", "촛불"], emoji: "🎂", gradient: "linear-gradient(135deg, #FDF2F8 0%, #FBCFE8 100%)", badgeText: "생일파티", badgeColor: "#9D174D" },
+  { keywords: ["숲", "나무", "숲속", "도토리", "버섯", "다람쥐", "토끼", "곰"], emoji: "🌲", gradient: "linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)", badgeText: "숲속", badgeColor: "#166534" },
+  { keywords: ["덧셈", "뺄셈", "곱셈", "나눗셈", "계산", "수학", "더하기", "빼기"], emoji: "➕", gradient: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", badgeText: "연산", badgeColor: "#92400E" },
+];
+
+function getNumbersCardMeta(title: string): CardMeta {
+  const lower = title.toLowerCase();
+  for (const m of NUMBERS_CARD_META) {
+    if (m.keywords.some((k) => lower.includes(k))) {
+      return { emoji: m.emoji, gradient: m.gradient, badge: "white", badgeText: m.badgeText, badgeColor: m.badgeColor };
+    }
+  }
+  return { emoji: "🔢", gradient: "linear-gradient(135deg, #FEF9C3 0%, #FEF08A 100%)", badge: "white", badgeText: "숫자", badgeColor: "#92400E" };
+}
+
 function extractWordsFromLesson(lesson: Lesson): PracticeWord[] {
   const result: PracticeWord[] = [];
   const content = lesson.numbers as NumbersOutput;
@@ -67,12 +88,12 @@ export default function NumbersPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
       supabase
         .from("number_lessons")
         .select("id, title, created_at, numbers")
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
         .then(({ data }) => setLessons(data ?? []));
     });
@@ -189,11 +210,12 @@ export default function NumbersPage() {
 
       {/* ── 목록 ── */}
       {tab === "list" && (
-        <ContentList
+        <LessonCardGrid
           items={lessons}
           table="number_lessons"
           viewPath="/dashboard/numbers"
           emptyText="아직 만든 숫자 학습이 없어요! 🎀"
+          getCardMeta={getNumbersCardMeta}
           onPractice={handlePractice}
         />
       )}

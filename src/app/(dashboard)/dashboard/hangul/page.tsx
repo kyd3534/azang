@@ -6,7 +6,7 @@ import { generateHangulLesson } from "@/lib/ai-actions";
 import { createClient } from "@/lib/supabase";
 import PageHeader from "@/components/ui/page-header";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import ContentList from "@/components/layout/ContentList";
+import LessonCardGrid, { type CardMeta } from "@/components/layout/LessonCardGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,29 @@ type Tab = "create" | "list" | "practice";
 
 type Lesson = { id: string; title: string; created_at: string; characters: unknown };
 
+const HANGUL_CARD_META: Array<{ keywords: string[]; emoji: string; gradient: string; badgeText: string; badgeColor: string }> = [
+  { keywords: ["동물", "강아지", "고양이", "토끼", "곰", "호랑이", "사자", "코끼리"], emoji: "🐶", gradient: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", badgeText: "동물", badgeColor: "#065F46" },
+  { keywords: ["음식", "밥", "빵", "국수", "떡", "과자", "간식", "요리", "먹거리"], emoji: "🍱", gradient: "linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)", badgeText: "음식", badgeColor: "#9A3412" },
+  { keywords: ["가족", "엄마", "아빠", "할머니", "할아버지", "언니", "오빠", "동생", "형"], emoji: "👨‍👩‍👧", gradient: "linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)", badgeText: "가족", badgeColor: "#9D174D" },
+  { keywords: ["집", "방", "거실", "주방", "화장실", "침실", "부엌"], emoji: "🏠", gradient: "linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)", badgeText: "집", badgeColor: "#1E40AF" },
+  { keywords: ["학교", "교실", "선생님", "공부", "칠판", "책상", "연필", "지우개"], emoji: "✏️", gradient: "linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)", badgeText: "학교", badgeColor: "#4338CA" },
+  { keywords: ["자연", "숲", "나무", "꽃", "풀", "산", "강", "들판", "바람"], emoji: "🌿", gradient: "linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)", badgeText: "자연", badgeColor: "#166534" },
+  { keywords: ["탈것", "자동차", "버스", "기차", "비행기", "배", "자전거", "오토바이"], emoji: "🚗", gradient: "linear-gradient(135deg, #DBEAFE 0%, #BAE6FD 100%)", badgeText: "탈것", badgeColor: "#075985" },
+  { keywords: ["날씨", "비", "눈", "햇살", "구름", "바람", "태풍", "무지개", "천둥"], emoji: "⛅", gradient: "linear-gradient(135deg, #FEF9C3 0%, #FEF08A 100%)", badgeText: "날씨", badgeColor: "#713F12" },
+  { keywords: ["감정", "기쁨", "슬픔", "화남", "놀람", "행복", "무서움", "사랑", "기분"], emoji: "😊", gradient: "linear-gradient(135deg, #FDF2F8 0%, #FBCFE8 100%)", badgeText: "감정", badgeColor: "#BE185D" },
+  { keywords: ["계절", "봄", "여름", "가을", "겨울", "꽃", "단풍", "눈사람"], emoji: "🍂", gradient: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", badgeText: "계절", badgeColor: "#92400E" },
+];
+
+function getHangulCardMeta(title: string): CardMeta {
+  const lower = title.toLowerCase();
+  for (const m of HANGUL_CARD_META) {
+    if (m.keywords.some((k) => lower.includes(k))) {
+      return { emoji: m.emoji, gradient: m.gradient, badge: "white", badgeText: m.badgeText, badgeColor: m.badgeColor };
+    }
+  }
+  return { emoji: "🌸", gradient: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", badge: "white", badgeText: "한글", badgeColor: "#065F46" };
+}
+
 function extractWordsFromLesson(lesson: Lesson): PracticeWord[] {
   const result: PracticeWord[] = [];
   const content = lesson.characters as HangulOutput;
@@ -67,12 +90,12 @@ export default function HangulPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
       supabase
         .from("hangul_lessons")
         .select("id, title, created_at, characters")
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
         .then(({ data }) => setLessons(data ?? []));
     });
@@ -188,11 +211,12 @@ export default function HangulPage() {
 
       {/* ── 목록 ── */}
       {tab === "list" && (
-        <ContentList
+        <LessonCardGrid
           items={lessons}
           table="hangul_lessons"
           viewPath="/dashboard/hangul"
           emptyText="아직 만든 한글 학습이 없어요! 🌸"
+          getCardMeta={getHangulCardMeta}
           onPractice={handlePractice}
         />
       )}

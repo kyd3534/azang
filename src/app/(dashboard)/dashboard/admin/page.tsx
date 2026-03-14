@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
-import { Trash2, Upload, Video } from "lucide-react";
+import { Trash2, Upload, Video, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 
 type ColoringTemplate = {
@@ -19,7 +19,13 @@ export default function AdminPage() {
   const [templateUrls, setTemplateUrls] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const COLS = 3; // sm:grid-cols-3 기준 첫 줄 개수
+  const visibleTemplates = expanded ? templates : templates.slice(0, COLS);
 
   useEffect(() => { loadTemplates(); }, []);
 
@@ -103,6 +109,36 @@ export default function AdminPage() {
     await loadTemplates();
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === templates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(templates.map((t) => t.id)));
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`선택한 ${selectedIds.size}개 도안을 삭제할까요?`)) return;
+    setBulkDeleting(true);
+    const supabase = createClient();
+    const toDelete = templates.filter((t) => selectedIds.has(t.id));
+    const paths = toDelete.map((t) => t.storage_path);
+    await supabase.storage.from("coloring_templates").remove(paths);
+    await supabase.from("coloring_templates").delete().in("id", [...selectedIds]);
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    await loadTemplates();
+  }
+
   const activeCount = templates.filter(t => t.is_active).length;
 
   return (
@@ -163,36 +199,101 @@ export default function AdminPage() {
         {templates.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">업로드된 도안이 없어요</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {templates.map((t) => (
-              <div key={t.id} className="rounded-xl overflow-hidden"
-                style={{ border: `2px solid ${t.is_active ? "#FFD0B5" : "#E5E7EB"}`, opacity: t.is_active ? 1 : 0.5 }}>
-                {templateUrls[t.id] && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={templateUrls[t.id]} alt={t.name}
-                    className="w-full aspect-square object-contain bg-gray-50 p-1" />
-                )}
-                <div className="px-2 py-1.5 space-y-1" style={{ background: "#FFFBF5" }}>
-                  <p className="text-xs font-bold truncate" style={{ color: "#E65100" }}>{t.name}</p>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => toggleTemplateActive(t)}
-                      className="flex-1 text-xs py-1 rounded-lg font-bold"
-                      style={{ background: t.is_active ? "#D1FAE5" : "#FEF3C7", color: t.is_active ? "#059669" : "#D97706" }}
-                    >
-                      {t.is_active ? "공개" : "숨김"}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTemplate(t)}
-                      className="p-1 rounded-lg hover:bg-red-50"
-                      style={{ color: "#EF4444" }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
+          <div className="space-y-3">
+            {/* 다중 선택 툴바 */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === templates.length && templates.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded accent-orange-500"
+                />
+                <span className="text-xs font-bold" style={{ color: "#6B7280" }}>
+                  전체 선택 ({selectedIds.size}/{templates.length})
+                </span>
+              </label>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                  style={{ background: "#FEE2E2", color: "#DC2626" }}
+                >
+                  <Trash2 size={12} />
+                  {bulkDeleting ? "삭제 중..." : `${selectedIds.size}개 삭제`}
+                </button>
+              )}
+            </div>
+
+            {/* 그리드 */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {visibleTemplates.map((t) => {
+                const isSelected = selectedIds.has(t.id);
+                return (
+                  <div
+                    key={t.id}
+                    className="rounded-xl overflow-hidden transition-all"
+                    style={{
+                      border: `2px solid ${isSelected ? "#F97316" : t.is_active ? "#FFD0B5" : "#E5E7EB"}`,
+                      opacity: t.is_active ? 1 : 0.5,
+                      boxShadow: isSelected ? "0 0 0 3px rgba(249,115,22,0.2)" : "none",
+                    }}
+                  >
+                    {/* 썸네일 + 체크박스 */}
+                    <div className="relative">
+                      {templateUrls[t.id] && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={templateUrls[t.id]} alt={t.name}
+                          className="w-full aspect-square object-contain bg-gray-50 p-1" />
+                      )}
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(t.id)}
+                        className="absolute top-1.5 left-1.5 w-4 h-4 rounded accent-orange-500 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="px-2 py-1.5 space-y-1" style={{ background: "#FFFBF5" }}>
+                      <p className="text-xs font-bold truncate" style={{ color: "#E65100" }}>{t.name}</p>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => toggleTemplateActive(t)}
+                          className="flex-1 text-xs py-1 rounded-lg font-bold"
+                          style={{ background: t.is_active ? "#D1FAE5" : "#FEF3C7", color: t.is_active ? "#059669" : "#D97706" }}
+                        >
+                          {t.is_active ? "공개" : "숨김"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTemplate(t)}
+                          className="p-1 rounded-lg hover:bg-red-50"
+                          style={{ color: "#EF4444" }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
+
+            {/* 펼치기 / 접기 버튼 */}
+            {templates.length > COLS && (
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                style={{ background: "#FFF3E8", color: "#E65100", border: "1.5px dashed #FFD0B5" }}
+              >
+                {expanded ? (
+                  <><ChevronUp size={14} /> 접기</>
+                ) : (
+                  <><ChevronDown size={14} /> 더 보기 ({templates.length - COLS}개 더)</>
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>

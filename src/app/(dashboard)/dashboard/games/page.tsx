@@ -13,15 +13,6 @@ const GAMES = [
     text: "#C2185B",
   },
   {
-    href: "/dashboard/games/counting",
-    emoji: "🌟",
-    label: "숫자 세기",
-    desc: "화면의 물건을 세어봐요",
-    bg: "linear-gradient(135deg, #FFF3C8 0%, #FFE599 100%)",
-    border: "#FFD740",
-    text: "#F57F17",
-  },
-  {
     href: "/dashboard/games/quiz",
     emoji: "🎯",
     label: "퀴즈 놀이",

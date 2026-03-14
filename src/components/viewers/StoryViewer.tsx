@@ -147,33 +147,81 @@ interface StoryViewerProps {
   moral: string;
 }
 
+const BG_MUSIC_SRC = "/sounds/freesound_community-steel-tongue-drum-played-by-cicada-near-lake-michigan-48394.mp3";
+const BG_VOLUME_TARGET = 0.10; // 목소리 방해 안 되는 아주 낮은 음량
+
 export default function StoryViewer({ title, sections, legacyPages, moral }: StoryViewerProps) {
   const { stop, tts, selectedVoiceId } = useVoice();
   const [playing, setPlaying] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
+  const bgRef = useRef<HTMLAudioElement | null>(null);
+  const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fullText = buildFullText(sections, legacyPages, moral);
   const sectionBlocks = sections.map((s) => s);
   const isPlaying = playing;
 
-  // 마운트 시 voices 미리 로드
+  // 마운트 시 voices 미리 로드 + 배경음 객체 준비
   useEffect(() => {
-    if (typeof window !== "undefined") window.speechSynthesis?.getVoices();
+    if (typeof window !== "undefined") {
+      window.speechSynthesis?.getVoices();
+      const audio = new Audio(BG_MUSIC_SRC);
+      audio.loop = true;
+      audio.volume = 0;
+      bgRef.current = audio;
+    }
+    return () => {
+      if (fadeRef.current) clearInterval(fadeRef.current);
+      bgRef.current?.pause();
+      bgRef.current = null;
+    };
   }, []);
+
+  function bgFadeIn() {
+    const bg = bgRef.current;
+    if (!bg) return;
+    if (fadeRef.current) clearInterval(fadeRef.current);
+    bg.volume = 0;
+    bg.play().catch(() => {});
+    fadeRef.current = setInterval(() => {
+      if (!bgRef.current) return;
+      const next = Math.min(bgRef.current.volume + 0.01, BG_VOLUME_TARGET);
+      bgRef.current.volume = next;
+      if (next >= BG_VOLUME_TARGET) { clearInterval(fadeRef.current!); fadeRef.current = null; }
+    }, 80);
+  }
+
+  function bgFadeOut() {
+    const bg = bgRef.current;
+    if (!bg) return;
+    if (fadeRef.current) clearInterval(fadeRef.current);
+    fadeRef.current = setInterval(() => {
+      if (!bgRef.current) return;
+      const next = Math.max(bgRef.current.volume - 0.01, 0);
+      bgRef.current.volume = next;
+      if (next <= 0) {
+        bgRef.current.pause();
+        bgRef.current.currentTime = 0;
+        clearInterval(fadeRef.current!);
+        fadeRef.current = null;
+      }
+    }, 80);
+  }
 
   function handlePlay() {
     setPlaying(true);
+    bgFadeIn();
     const isElevenLabs =
       selectedVoiceId !== "" &&
       selectedVoiceId !== "__female__" &&
       selectedVoiceId !== "__male__";
 
     if (isElevenLabs) {
-      tts(fullText, { lang: "ko", raw: true, onEnd: () => setPlaying(false) });
+      tts(fullText, { lang: "ko", raw: true, onEnd: () => { setPlaying(false); bgFadeOut(); } });
       stopRef.current = () => stop();
     } else {
       const gender = selectedVoiceId === "__male__" ? "male" : "female";
-      stopRef.current = speakKoreanStory(fullText, { gender, onDone: () => setPlaying(false) });
+      stopRef.current = speakKoreanStory(fullText, { gender, onDone: () => { setPlaying(false); bgFadeOut(); } });
     }
   }
 
@@ -182,6 +230,7 @@ export default function StoryViewer({ title, sections, legacyPages, moral }: Sto
     stopRef.current = null;
     stop();
     setPlaying(false);
+    bgFadeOut();
   }
 
   return (

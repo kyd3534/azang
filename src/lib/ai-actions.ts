@@ -33,10 +33,18 @@ export async function generateStory(input: StoryInput) {
     await saveCache(cacheKey, "story", result);
   }
 
+  const pageCount = result.sections.reduce((sum, s) => sum + s.paragraphs.length, 0);
+
   const { data, error } = await supabase.from("stories").insert({
     user_id: user.id,
     title: result.title,
-    content: { version: 2, sections: result.sections, moral: result.moral },
+    content: {
+      version: 2,
+      sections: result.sections,
+      moral: result.moral,
+      storyTheme: result.storyTheme,
+      pageCount,
+    },
     expires_at: getExpiresAt(isAdmin),
   }).select().single();
 

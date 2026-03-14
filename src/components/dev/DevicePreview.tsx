@@ -32,7 +32,7 @@ export function DeviceToolbar() {
     <div
       style={{
         position: 'fixed',
-        bottom: 20,
+        top: 20,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 999999,

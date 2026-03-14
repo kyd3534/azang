@@ -5,7 +5,17 @@ import LessonViewer from "@/components/viewers/LessonViewer";
 import DialogueViewer from "@/components/viewers/DialogueViewer";
 import SentencesViewer from "@/components/viewers/SentencesViewer";
 import EnglishCombinedViewer from "@/components/viewers/EnglishCombinedViewer";
-import type { EnglishOutput, CombinedOutput } from "@/ai/flows/english";
+import SoundImageViewer from "@/components/viewers/SoundImageViewer";
+import PhonicsViewer from "@/components/viewers/PhonicsViewer";
+import type {
+  EnglishOutput,
+  CombinedOutput,
+  SoundImageOutput,
+  AlphabetPhonicsOutput,
+  PhonicsSystematicOutput,
+  ReadingFluencyOutput,
+  AcademicLiteracyOutput,
+} from "@/ai/flows/english";
 
 export default async function EnglishViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,8 +35,20 @@ export default async function EnglishViewPage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <PageHeader title={lesson.title} emoji="🔤" backHref="/dashboard/english" />
+      <PageHeader title={lesson.title} emoji="⭐" backHref="/dashboard/english" />
 
+      {/* 새 연령별 레슨 타입 */}
+      {content.contentType === "sound_image" && (
+        <SoundImageViewer data={content as SoundImageOutput} />
+      )}
+      {(content.contentType === "alphabet_phonics" ||
+        content.contentType === "phonics_systematic" ||
+        content.contentType === "reading_fluency" ||
+        content.contentType === "academic_literacy") && (
+        <PhonicsViewer data={content as AlphabetPhonicsOutput | PhonicsSystematicOutput | ReadingFluencyOutput | AcademicLiteracyOutput} />
+      )}
+
+      {/* 하위 호환 — 기존 DB 데이터 */}
       {content.contentType === "combined" && (
         <EnglishCombinedViewer data={content as CombinedOutput} />
       )}
